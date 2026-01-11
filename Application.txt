@@ -1,0 +1,496 @@
+ AI-Enabled Pet Adoption & Care Management System
+Backend: Python Django (REST API)
+Frontend: Flutter (Mobile Application)
+Database: SQLite3
+
+1️⃣ INTRODUCTION
+The AI-Enabled Pet Adoption & Care Management System is a mobile-based application designed to manage the complete lifecycle of pet adoption, health tracking, and care management.
+The system supports two types of users:
+
+Admin – controls, verifies, and manages the platform
+
+User – can adopt pets and also post pets for adoption
+
+To ensure trust and safety, all pets posted by users must be verified and approved by the admin before they are visible to the public.
+
+The application uses Django REST APIs for backend logic, Flutter for a smooth mobile UI, and SQLite3 as a lightweight relational database.
+
+2️⃣ SYSTEM ARCHITECTURE OVERVIEW
+How the system works (High level)
+User/Admin opens the Flutter mobile app
+
+Flutter sends requests to Django REST APIs
+
+Django validates authentication and role permissions
+
+Business logic and AI rules are executed
+
+Data is stored or fetched from SQLite3
+
+Response is sent back to Flutter
+
+UI updates dynamically based on role
+
+3️⃣ USER ROLES & ACCESS CONTROL
+Roles in the system
+Role	Description
+Admin	Full system control
+User	Can adopt pets and post pets
+
+Security handling
+JWT-based authentication
+
+Role-based access control
+
+Password hashing
+
+Token validation for every request
+
+4️⃣ ADMIN PORTAL – COMPLETE FUNCTIONALITY
+🔐 4.1 Admin Login
+Admin logs in using secure credentials
+
+Django verifies credentials
+
+JWT token is issued
+
+Admin gains access to admin-only APIs
+
+📊 4.2 Admin Dashboard
+The dashboard provides a complete system overview, including:
+
+Total pets registered
+
+Available vs adopted pets
+
+Pending pet approvals
+
+Pending adoption requests
+
+Upcoming vaccination alerts
+
+Monthly adoption statistics (charts)
+
+🐾 4.3 Pet Category Management
+Admin creates and manages pet categories (Dog, Cat, Bird, etc.)
+
+Categories act as master data
+
+Used in:
+
+Pet registration
+
+AI logic
+
+Search & filtering
+
+🐶 4.4 Pet Registration (Admin-Added Pets)
+Admin can directly add pets
+
+Pets added by admin are auto-approved
+
+Status set to Approved & Available
+
+🖼 4.5 Pet Image Upload
+Images uploaded via Flutter
+
+Stored in Django media directory
+
+Only image path saved in SQLite
+
+Secure and storage-efficient approach
+
+👤 4.6 Owner / Shelter Management
+Admin manages shelters or previous owners
+
+Pets are linked to owners using foreign keys
+
+Ownership history is preserved
+
+🔍 4.7 User-Posted Pet Verification (CRITICAL FEATURE)
+Why this is needed
+Prevent fake listings
+
+Maintain trust
+
+Ensure animal safety
+
+How it works
+User posts a pet
+
+Pet status = Pending
+
+Admin reviews:
+
+Pet details
+
+Images
+
+Health information
+
+Admin decision:
+
+Approve → pet becomes visible
+
+Reject → pet is hidden, reason stored
+
+Request Update → user edits and resubmits
+
+🔁 4.8 Pet Status Lifecycle
+Status	Meaning	Visibility
+Pending	Waiting for admin approval	❌
+Approved	Verified and live	✅
+Rejected	Invalid listing	❌
+Adopted	Already adopted	❌
+Returned	Returned pet	Admin decides
+
+❤️ 4.9 Adoption Management
+Admin views adoption requests
+
+Approves or rejects requests
+
+Pet ownership is transferred
+
+Adoption history is maintained
+
+🔄 4.10 Return Adoption Management
+User requests pet return
+
+Admin reviews reason
+
+Pet status updated
+
+Pet may be re-listed after review
+
+💉 4.11 Vaccination Records & Alerts
+Admin records vaccinations
+
+System calculates next due date
+
+Automated vaccination reminders
+
+Alerts shown in dashboards
+
+🛁 4.12 Care, Feeding & Grooming Management
+Admin defines care schedules by pet type
+
+Feeding and grooming records stored
+
+Automatically visible to adopters
+
+🏥 4.13 Medical History & Health Logs
+Illness records
+
+Vet diagnosis
+
+Prescriptions
+
+Permanent and read-only for users
+
+🤖 4.14 AI-Based Admin Logic (Simple & Academic)
+Vaccination due prediction
+
+Care tip generation
+
+Pet-owner compatibility score
+
+Rule-based (no heavy ML)
+
+📄 4.15 Reports & Export
+Export reports in:
+
+PDF
+
+CSV
+
+Adoption reports
+
+Vaccination schedules
+
+Pet inventory reports
+
+5️⃣ USER PORTAL – COMPLETE FUNCTIONALITY
+👤 5.1 User Registration & Login
+Secure signup and login
+
+JWT token issued
+
+Profile stored in SQLite
+
+🏠 5.2 User Dashboard
+View available pets
+
+Adoption request status
+
+Notifications
+
+AI pet recommendations
+
+🐶 5.3 Browse & Search Pets
+Only approved pets are shown
+
+Filters:
+
+Category
+
+Age
+
+Breed
+
+Availability
+
+📝 5.4 Post a Pet for Adoption (User Feature)
+Flow
+User fills pet form
+
+Uploads images
+
+Submits request
+
+Pet status = Pending
+
+Admin approval required
+
+User can:
+
+View submission status
+
+Edit rejected pets
+
+Delete own posts
+
+🤖 5.5 AI-Based Pet Recommendation
+User provides lifestyle details
+
+Backend calculates match score
+
+Best-matched pets shown first
+
+❤️ 5.6 Adoption Request
+User applies for adoption
+
+Request sent to admin
+
+Status tracked in real time
+
+🐕 5.7 Adopted Pet Management
+View adopted pet details
+
+Care schedule
+
+Feeding & grooming reminders
+
+Vaccination alerts
+
+Medical history (read-only)
+
+🔄 5.8 Return Adoption Request
+User submits return request
+
+Admin reviews and approves/rejects
+
+📄 5.9 Reports
+Download pet and adoption reports
+
+PDF/CSV formats
+
+6️⃣ DATABASE DESIGN (SQLite3)
+Normalized relational structure
+
+Foreign key relationships
+
+Status-based workflow
+
+Easy migration to PostgreSQL
+
+7️⃣ SECURITY & DATA PROTECTION
+JWT authentication
+
+Role-based access
+
+Input validation
+
+Secure image uploads
+
+Audit logs for approvals
+
+8️⃣ FINAL OUTCOME
+This system:
+✔ Matches real-world adoption platforms
+✔ Is academically strong
+✔ Uses AI acceptably
+✔ Is scalable and secure
+✔ Fits Django + Flutter perfectly
+
+🔚 FINAL CONCLUSION
+The AI-Enabled Pet Adoption & Care Management System provides a secure, verified, and intelligent platform for pet adoption and care tracking.
+By introducing admin approval for user-posted pets, the system ensures trust, transparency, and animal safety, making it suitable for both academic and real-world use.
+
+BASE COLOR PALETTE
+🟢 Primary Color – Care Green
+#6FCF97
+
+Represents care, growth, and well-being
+
+Reduces anxiety during adoption decisions
+
+Used for:
+
+Primary buttons
+
+App bars
+
+Success states
+
+🔵 Secondary Color – Trust Blue
+#56CCF2
+
+Builds confidence and reliability
+
+Used for:
+
+Adoption information
+
+AI suggestions
+
+Status indicators
+
+🟡 Emotional Accent – Warm Amber
+#F2C94C
+
+Represents attention without danger
+
+Used for:
+
+Pending approvals
+
+Warnings (non-critical)
+
+Highlights
+
+🔴 Critical Alert Color – Soft Red
+#EB5757
+
+Indicates risk or rejection
+
+Used sparingly to avoid stress
+
+Used for:
+
+Rejections
+
+Critical health alerts
+
+⚪ Background – Comfort White
+#F9FAFB
+
+Prevents eye fatigue
+
+Improves content readability
+
+⚫ Text Color – Charcoal Black
+#333333
+
+Softer than pure black
+
+Better for long reading
+
+
+ADAPTIVE COLOR USAGE (NEW CONCEPT)
+Instead of static coloring:
+
+Situation	Color Behavior
+Pet Approved	Green highlight
+Pet Pending	Amber indicator
+Pet Rejected	Red label
+Admin Mode	Cooler blue-gray tone
+User Mode	Warmer green tone
+AI Recommendation	Blue gradient
+
+This context-aware coloring improves usability and reduces confusion.
+
+5️⃣ TYPOGRAPHY THEORY USED
+✍ Cognitive Readability Typography (Modern UX Concept)
+Typography is selected based on:
+
+Mobile readability
+
+Emotional friendliness
+
+Cognitive load reduction
+
+6️⃣ FONT SELECTION
+🅰 Primary Font – Poppins
+Rounded edges → friendly & modern
+
+Excellent for headings and titles
+
+Creates emotional warmth
+
+Used for:
+
+App titles
+
+Section headers
+
+Buttons
+
+🅱 Secondary Font – Roboto
+Neutral and highly readable
+
+Industry-proven for mobile UI
+
+Reduces eye strain
+
+Used for:
+
+Body text
+
+Forms
+
+Descriptions
+
+Reports
+
+7️⃣ TYPOGRAPHY HIERARCHY
+Element	Font	Size
+App Title	Poppins SemiBold	22–24
+Section Heading	Poppins Medium	18–20
+Button Text	Poppins Medium	14–16
+Body Text	Roboto Regular	14
+Form Labels	Roboto Medium	13
+Captions	Roboto Light	12
+
+8️⃣ MICRO-TYPOGRAPHY RULES (NEW)
+These are often not mentioned in student projects:
+
+Line height: 1.4–1.6 for comfort
+
+Letter spacing slightly increased for buttons
+
+Avoid all-caps text (except small tags)
+
+Use font weight instead of color for emphasis
+
+Limit to 2 fonts only to reduce cognitive load
+
+9️⃣ ACCESSIBILITY & INCLUSIVITY
+Minimum contrast ratio: 4.5:1
+
+Color never used alone to convey meaning
+(icons + text always included)
+
+Large tap targets (48px minimum)
+
+Dyslexia-friendly spacing
+
+🔟 ADMIN vs USER TYPOGRAPHY DIFFERENCE (SUBTLE BUT SMART)
+Area	Admin UI	User UI
+Font Weight	Medium	Regular
+Color Tone	Cooler	Warmer
+Layout	Dense	Spacious
+Focus	Control	Comfort
+
+This improves role clarity without separate designs.
+
+1️⃣1️⃣ 
