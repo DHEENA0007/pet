@@ -1,0 +1,149 @@
+# ==========================
+# Python / Django
+# ==========================
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Virtual environment
+venv/
+env/
+.venv/
+ENV/
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Django stuff
+*.log
+local_settings.py
+# db.sqlite3  # Commented out - database is tracked in git
+# db.sqlite3-journal
+*.pot
+*.pyc
+
+# Static files (if collected)
+staticfiles/
+static/
+
+# Media files
+media/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# ==========================
+# Flutter / Dart
+# ==========================
+
+# Dart/Flutter specific
+pet_app/.dart_tool/
+pet_app/.packages
+pet_app/.pub-cache/
+pet_app/.pub/
+pet_app/build/
+pet_app/.flutter-plugins
+pet_app/.flutter-plugins-dependencies
+
+# Android related
+pet_app/android/.gradle/
+pet_app/android/app/debug/
+pet_app/android/app/profile/
+pet_app/android/app/release/
+pet_app/android/local.properties
+pet_app/android/**/GeneratedPluginRegistrant.java
+pet_app/android/key.properties
+*.jks
+*.keystore
+
+# iOS related
+pet_app/ios/.symlinks/
+pet_app/ios/Pods/
+pet_app/ios/Flutter/Flutter.framework
+pet_app/ios/Flutter/Flutter.podspec
+pet_app/ios/Flutter/Generated.xcconfig
+pet_app/ios/Flutter/app.flx
+pet_app/ios/Flutter/app.zip
+pet_app/ios/Flutter/flutter_assets/
+pet_app/ios/Flutter/flutter_export_environment.sh
+pet_app/ios/ServiceDefinitions.json
+pet_app/ios/Runner/GeneratedPluginRegistrant.*
+**/DerivedData/
+**/Podfile.lock
+
+# VS Code / IDE
+.vscode/
+.idea/
+*.iml
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+*.lnk
+
+# ==========================
+# Miscellaneous
+# ==========================
+
+# Logs
+*.log
+logs/
+
+# Secrets
+*.pem
+*.key
+secrets.json
+
+# Android SDK
+cmdline-tools.zip
+
+# Coverage
+coverage/
+.coverage
+htmlcov/
+
+# Pytest
+.pytest_cache/
+
+# MyPy
+.mypy_cache/
+
+# Node modules (if any)
+node_modules/
+
+# Temporary files
+*.tmp
+*.temp
+.temp/
+.tmp/
