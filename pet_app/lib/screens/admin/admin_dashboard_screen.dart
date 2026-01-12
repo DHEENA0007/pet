@@ -120,11 +120,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     ),
                     
                     _buildActionCard(
-                      icon: Icons.assignment,
+                      icon: Icons.favorite,
                       title: 'Adoption Requests',
                       subtitle: '${_stats?['pending_adoptions'] ?? 0} requests pending',
                       color: AppColors.secondaryBlue,
-                      onTap: () {},
+                      onTap: () => context.push('/admin/adoptions'),
                     ),
                     
                     _buildActionCard(
@@ -132,7 +132,55 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       title: 'Vaccination Alerts',
                       subtitle: '${_stats?['upcoming_vaccinations'] ?? 0} due soon',
                       color: AppColors.criticalRed,
-                      onTap: () {},
+                      onTap: () => context.push('/vaccinations'),
+                    ),
+                    
+                    _buildActionCard(
+                      icon: Icons.category,
+                      title: 'Manage Categories',
+                      subtitle: 'Add, edit, or remove pet categories',
+                      color: AppColors.primaryGreen,
+                      onTap: () => context.push('/admin/categories'),
+                    ),
+                    
+                    _buildActionCard(
+                      icon: Icons.people,
+                      title: 'Owners & Shelters',
+                      subtitle: 'Manage pet owners and shelters',
+                      color: Colors.purple,
+                      onTap: () => context.push('/admin/owners'),
+                    ),
+                    
+                    _buildActionCard(
+                      icon: Icons.schedule,
+                      title: 'Care Schedules',
+                      subtitle: 'Define care routines by category',
+                      color: Colors.teal,
+                      onTap: () => context.push('/care-schedules'),
+                    ),
+                    
+                    _buildActionCard(
+                      icon: Icons.assignment_return,
+                      title: 'Return Requests',
+                      subtitle: 'Process pet return requests',
+                      color: Colors.orange,
+                      onTap: () => context.push('/admin/returns'),
+                    ),
+                    
+                    _buildActionCard(
+                      icon: Icons.medical_information,
+                      title: 'Medical Records',
+                      subtitle: 'View all pet medical history',
+                      color: Colors.indigo,
+                      onTap: () => context.push('/medical-records'),
+                    ),
+                    
+                    _buildActionCard(
+                      icon: Icons.description,
+                      title: 'Reports',
+                      subtitle: 'Generate PDF/CSV reports',
+                      color: Colors.brown,
+                      onTap: () => context.push('/reports'),
                     ),
                   ],
                 ),

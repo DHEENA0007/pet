@@ -16,6 +16,15 @@ import '../../screens/profile/profile_screen.dart';
 import '../../screens/adoption/my_requests_screen.dart';
 import '../../screens/admin/admin_dashboard_screen.dart';
 import '../../screens/admin/pending_approvals_screen.dart';
+import '../../screens/admin/category_management_screen.dart';
+import '../../screens/admin/admin_adoption_requests_screen.dart';
+import '../../screens/admin/owner_management_screen.dart';
+import '../../screens/admin/return_requests_screen.dart';
+import '../../screens/health/vaccination_management_screen.dart';
+import '../../screens/health/medical_records_screen.dart';
+import '../../screens/health/care_schedule_screen.dart';
+import '../../screens/reports/reports_screen.dart';
+import '../../screens/pets/my_adopted_pet_screen.dart';
 
 class AppRouter {
   static final GoRouter router = GoRouter(
@@ -60,6 +69,14 @@ class AppRouter {
         },
       ),
       GoRoute(
+        path: '/my-pets/:id',
+        name: 'myAdoptedPet',
+        builder: (context, state) {
+          final id = int.parse(state.pathParameters['id']!);
+          return MyAdoptedPetScreen(petId: id);
+        },
+      ),
+      GoRoute(
         path: '/add-pet',
         name: 'addPet',
         builder: (context, state) => const AddPetScreen(),
@@ -85,6 +102,68 @@ class AppRouter {
         path: '/admin/pending',
         name: 'pendingApprovals',
         builder: (context, state) => const PendingApprovalsScreen(),
+      ),
+      GoRoute(
+        path: '/admin/categories',
+        name: 'categoryManagement',
+        builder: (context, state) => const CategoryManagementScreen(),
+      ),
+      GoRoute(
+        path: '/admin/adoptions',
+        name: 'adminAdoptions',
+        builder: (context, state) => const AdminAdoptionRequestsScreen(),
+      ),
+      GoRoute(
+        path: '/admin/owners',
+        name: 'ownerManagement',
+        builder: (context, state) => const OwnerManagementScreen(),
+      ),
+      GoRoute(
+        path: '/admin/returns',
+        name: 'returnRequests',
+        builder: (context, state) => const ReturnRequestsScreen(),
+      ),
+      
+      // Health Routes
+      GoRoute(
+        path: '/vaccinations',
+        name: 'vaccinations',
+        builder: (context, state) => const VaccinationManagementScreen(),
+      ),
+      GoRoute(
+        path: '/vaccinations/:petId',
+        name: 'petVaccinations',
+        builder: (context, state) {
+          final petId = int.parse(state.pathParameters['petId']!);
+          final petName = state.uri.queryParameters['name'];
+          return VaccinationManagementScreen(petId: petId, petName: petName);
+        },
+      ),
+      GoRoute(
+        path: '/medical-records',
+        name: 'medicalRecords',
+        builder: (context, state) => const MedicalRecordsScreen(),
+      ),
+      GoRoute(
+        path: '/medical-records/:petId',
+        name: 'petMedicalRecords',
+        builder: (context, state) {
+          final petId = int.parse(state.pathParameters['petId']!);
+          final petName = state.uri.queryParameters['name'];
+          return MedicalRecordsScreen(petId: petId, petName: petName);
+        },
+      ),
+      GoRoute(
+        path: '/care-schedules',
+        name: 'careSchedules',
+        builder: (context, state) => const CareScheduleManagementScreen(),
+      ),
+      
+      // Reports
+      GoRoute(
+        path: '/reports',
+        name: 'reports',
+        builder: (context, state) => const ReportsScreen(),
       ),
     ],
     
@@ -135,3 +214,4 @@ class AppRouter {
     ),
   );
 }
+

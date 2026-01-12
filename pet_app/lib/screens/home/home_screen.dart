@@ -9,6 +9,7 @@ import '../../core/providers/pet_provider.dart';
 import '../../core/providers/adoption_provider.dart';
 import '../../widgets/pet_card.dart';
 import '../../widgets/category_chip.dart';
+import '../../core/utils/category_utils.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -261,20 +262,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   IconData _getCategoryIcon(String name) {
-    switch (name.toLowerCase()) {
-      case 'dog':
-        return Icons.pets;
-      case 'cat':
-        return Icons.catching_pokemon;
-      case 'bird':
-        return Icons.flutter_dash;
-      case 'fish':
-        return Icons.water;
-      case 'rabbit':
-        return Icons.cruelty_free;
-      default:
-        return Icons.pets;
-    }
+    return CategoryUtils.getCategoryIcon(name);
   }
 
   Widget _buildRecommendations(AdoptionProvider provider) {
@@ -497,7 +485,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: provider.adoptedPets.length,
                     itemBuilder: (context, index) {
-                      return _buildPetListItem(provider.adoptedPets[index]);
+                      return _buildAdoptedPetItem(provider.adoptedPets[index]);
                     },
                   ),
               ],
@@ -526,6 +514,48 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+
+  Widget _buildAdoptedPetItem(pet) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: ListTile(
+        contentPadding: const EdgeInsets.all(12),
+        leading: CircleAvatar(
+          radius: 30,
+          backgroundColor: AppColors.primaryGreen.withOpacity(0.1),
+          child: Icon(
+            CategoryUtils.getCategoryIcon(pet.categoryName ?? ''),
+            color: AppColors.primaryGreen,
+          ),
+        ),
+        title: Text(pet.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('${pet.categoryName ?? ''} • ${pet.ageString}'),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Icon(Icons.favorite, size: 14, color: AppColors.primaryGreen),
+                const SizedBox(width: 4),
+                Text(
+                  'Tap to manage care',
+                  style: TextStyle(
+                    color: AppColors.primaryGreen,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        trailing: const Icon(Icons.chevron_right),
+        isThreeLine: true,
+        onTap: () => context.push('/my-pets/${pet.id}'),
+      ),
+    );
+  }
+
 
   Widget _buildProfileTab() {
     final authProvider = Provider.of<AuthProvider>(context);
@@ -602,6 +632,11 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icons.assignment_outlined,
             title: 'My Adoption Requests',
             onTap: () => context.push('/my-requests'),
+          ),
+          _buildMenuItem(
+            icon: Icons.description_outlined,
+            title: 'Download Reports',
+            onTap: () => context.push('/reports'),
           ),
           _buildMenuItem(
             icon: Icons.settings_outlined,

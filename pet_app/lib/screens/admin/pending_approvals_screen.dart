@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/providers/pet_provider.dart';
+import '../../core/utils/category_utils.dart';
 
 class PendingApprovalsScreen extends StatefulWidget {
   const PendingApprovalsScreen({super.key});
@@ -85,7 +86,10 @@ class _PendingApprovalsScreenState extends State<PendingApprovalsScreen> {
             leading: CircleAvatar(
               radius: 30,
               backgroundColor: AppColors.accentAmber.withOpacity(0.1),
-              child: const Icon(Icons.pets, color: AppColors.accentAmber),
+              child: Icon(
+                CategoryUtils.getCategoryIcon(pet.categoryName ?? ''),
+                color: AppColors.accentAmber,
+              ),
             ),
             title: Text(
               pet.name,

@@ -36,4 +36,15 @@ class PetCategory {
       petCount: json['pet_count'],
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      if (description != null) 'description': description,
+      if (typicalLifespan != null) 'typical_lifespan': typicalLifespan,
+      if (careDifficulty != null) 'care_difficulty': careDifficulty,
+      if (spaceRequirement != null) 'space_requirement': spaceRequirement,
+      if (activityNeeds != null) 'activity_needs': activityNeeds,
+    };
+  }
 }

@@ -9,6 +9,7 @@ import 'core/theme/app_theme.dart';
 import 'core/providers/auth_provider.dart';
 import 'core/providers/pet_provider.dart';
 import 'core/providers/adoption_provider.dart';
+import 'core/providers/health_provider.dart';
 import 'core/router/app_router.dart';
 
 void main() {
@@ -26,6 +27,7 @@ class PetAdoptionApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => PetProvider()),
         ChangeNotifierProvider(create: (_) => AdoptionProvider()),
+        ChangeNotifierProvider(create: (_) => HealthProvider()),
       ],
       child: Builder(
         builder: (context) {

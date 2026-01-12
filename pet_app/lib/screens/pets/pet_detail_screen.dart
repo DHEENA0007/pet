@@ -7,6 +7,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/providers/pet_provider.dart';
 import '../../core/providers/adoption_provider.dart';
 import '../../core/providers/auth_provider.dart';
+import '../../core/utils/category_utils.dart';
 
 class PetDetailScreen extends StatefulWidget {
   final int petId;
@@ -69,8 +70,8 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
                           CircleAvatar(
                             radius: 60,
                             backgroundColor: Colors.white.withOpacity(0.2),
-                            child: const Icon(
-                              Icons.pets,
+                            child: Icon(
+                              CategoryUtils.getCategoryIcon(pet.categoryName ?? ''),
                               size: 60,
                               color: Colors.white,
                             ),

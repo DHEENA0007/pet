@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../core/constants/app_colors.dart';
+import '../core/utils/category_utils.dart';
 import '../models/pet.dart';
 
 class PetCard extends StatelessWidget {
@@ -144,36 +145,12 @@ class PetCard extends StatelessWidget {
   }
 
   Color _getCategoryColor(String? category) {
-    switch (category?.toLowerCase()) {
-      case 'dog':
-        return Colors.brown;
-      case 'cat':
-        return Colors.orange;
-      case 'bird':
-        return Colors.blue;
-      case 'rabbit':
-        return Colors.pink;
-      case 'fish':
-        return Colors.cyan;
-      default:
-        return AppColors.primaryGreen;
-    }
+    if (category == null) return AppColors.primaryGreen;
+    return CategoryUtils.getCategoryColor(category);
   }
 
   IconData _getCategoryIcon(String? category) {
-    switch (category?.toLowerCase()) {
-      case 'dog':
-        return Icons.pets;
-      case 'cat':
-        return Icons.catching_pokemon;
-      case 'bird':
-        return Icons.flutter_dash;
-      case 'rabbit':
-        return Icons.cruelty_free;
-      case 'fish':
-        return Icons.water;
-      default:
-        return Icons.pets;
-    }
+    if (category == null) return Icons.pets;
+    return CategoryUtils.getCategoryIcon(category);
   }
 }

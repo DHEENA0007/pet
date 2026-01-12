@@ -120,6 +120,68 @@ class PetProvider extends ChangeNotifier {
     }
   }
 
+  // Create new category (admin only)
+  Future<bool> createCategory(Map<String, dynamic> categoryData) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      await _apiService.post(ApiConstants.categories, categoryData);
+      await fetchCategories(); // Refresh the list
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // Update category (admin only)
+  Future<bool> updateCategory(int categoryId, Map<String, dynamic> categoryData) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      await _apiService.put('${ApiConstants.categories}$categoryId/', categoryData);
+      await fetchCategories(); // Refresh the list
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // Delete category (admin only)
+  Future<bool> deleteCategory(int categoryId) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final success = await _apiService.delete('${ApiConstants.categories}$categoryId/');
+      if (success) {
+        await fetchCategories(); // Refresh the list
+      }
+      _isLoading = false;
+      notifyListeners();
+      return success;
+    } catch (e) {
+      _error = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
   // Create new pet post
   Future<bool> createPet(Map<String, dynamic> petData) async {
     _isLoading = true;

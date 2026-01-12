@@ -3,7 +3,7 @@ AI-Enabled Pet Adoption & Care Management System - Views
 REST API views for all endpoints
 """
 
-from rest_framework import viewsets, status, generics, permissions
+from rest_framework import viewsets, status, generics, permissions, serializers
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -136,6 +136,15 @@ class PetCategoryViewSet(viewsets.ModelViewSet):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
             return [IsAdmin()]
         return [permissions.AllowAny()]
+    
+    def perform_destroy(self, instance):
+        """Prevent deletion of categories that have pets"""
+        pet_count = instance.pets.count()
+        if pet_count > 0:
+            raise serializers.ValidationError({
+                'detail': f'Cannot delete category "{instance.name}". It has {pet_count} pet(s) associated with it. Please reassign or remove those pets first.'
+            })
+        instance.delete()
 
 
 # ==================== Owner Views ====================
@@ -372,6 +381,7 @@ class AdoptionRequestViewSet(viewsets.ModelViewSet):
 
 class ReturnRequestViewSet(viewsets.ModelViewSet):
     """Return request management"""
+    permission_classes = [permissions.IsAuthenticated]
     
     def get_queryset(self):
         user = self.request.user
@@ -386,6 +396,11 @@ class ReturnRequestViewSet(viewsets.ModelViewSet):
             return ReturnRequestCreateSerializer
         return ReturnRequestSerializer
     
+    def get_permissions(self):
+        if self.action in ['process']:
+            return [IsAdmin()]
+        return [permissions.IsAuthenticated()]
+    
     @action(detail=True, methods=['post'], permission_classes=[IsAdmin])
     def process(self, request, pk=None):
         """Admin processes a return request"""
@@ -394,9 +409,26 @@ class ReturnRequestViewSet(viewsets.ModelViewSet):
         
         if new_status == 'approved':
             pet = return_request.pet
-            pet.status = 'returned'
+            pet.status = 'approved'  # Make available again
             pet.current_owner = None
             pet.save()
+            
+            # Create notification
+            create_notification(
+                user=return_request.user,
+                notification_type='return_approved',
+                title='Return Request Approved',
+                message=f'Your return request for "{pet.name}" has been approved.',
+                pet=pet
+            )
+        elif new_status == 'rejected':
+            create_notification(
+                user=return_request.user,
+                notification_type='return_rejected',
+                title='Return Request Rejected',
+                message=f'Your return request for "{return_request.pet.name}" was rejected.',
+                pet=return_request.pet
+            )
         
         return_request.status = new_status
         return_request.admin_notes = request.data.get('admin_notes', '')
