@@ -45,10 +45,11 @@ class _MyAdoptedPetScreenState extends State<MyAdoptedPetScreen>
     final petProvider = Provider.of<PetProvider>(context, listen: false);
     final healthProvider = Provider.of<HealthProvider>(context, listen: false);
     
-    _pet = await petProvider.fetchPetDetails(widget.petId);
+    await petProvider.fetchPetDetails(widget.petId);
+    _pet = petProvider.selectedPet;
     await healthProvider.fetchVaccinations(petId: widget.petId);
     await healthProvider.fetchMedicalRecords(petId: widget.petId);
-    await healthProvider.fetchCareSchedules(categoryId: _pet?.category);
+    await healthProvider.fetchCareSchedules(categoryId: _pet?.categoryId);
     
     setState(() => _isLoading = false);
   }
