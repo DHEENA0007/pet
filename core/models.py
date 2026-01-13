@@ -366,6 +366,7 @@ class Notification(models.Model):
         ('pet_approved', 'Pet Approved'),
         ('pet_rejected', 'Pet Rejected'),
         ('vaccination_due', 'Vaccination Due'),
+        ('vaccination_administered', 'Vaccination Administered'),
         ('care_reminder', 'Care Reminder'),
         ('general', 'General'),
     ]

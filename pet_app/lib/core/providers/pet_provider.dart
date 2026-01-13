@@ -26,7 +26,7 @@ class PetProvider extends ChangeNotifier {
   String? get error => _error;
 
   // Fetch all available pets
-  Future<void> fetchPets({String? status, int? category}) async {
+  Future<void> fetchPets({String? status, int? category, String? search}) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
@@ -37,6 +37,7 @@ class PetProvider extends ChangeNotifier {
       
       if (status != null) params.add('status=$status');
       if (category != null) params.add('category=$category');
+      if (search != null && search.isNotEmpty) params.add('search=$search');
       
       if (params.isNotEmpty) {
         endpoint += '?${params.join('&')}';

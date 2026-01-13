@@ -3,7 +3,7 @@ AI-Enabled Pet Adoption & Care Management System - Views
 REST API views for all endpoints
 """
 
-from rest_framework import viewsets, status, generics, permissions, serializers
+from rest_framework import viewsets, status, generics, permissions, serializers, filters
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -160,6 +160,11 @@ class OwnerViewSet(viewsets.ModelViewSet):
 
 class PetViewSet(viewsets.ModelViewSet):
     """Complete pet management"""
+    
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['name', 'breed', 'category__name', 'description']
+    ordering_fields = ['created_at', 'name', 'age_years']
+    ordering = ['-created_at']
     
     def get_queryset(self):
         user = self.request.user
@@ -464,6 +469,31 @@ class VaccinationViewSet(viewsets.ModelViewSet):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
             return [IsAdmin()]
         return [permissions.IsAuthenticated()]
+    
+    def create(self, request, *args, **kwargs):
+        """Create vaccination record and send notification if pet is adopted"""
+        response = super().create(request, *args, **kwargs)
+        
+        if response.status_code == 201:
+            vaccination_data = response.data
+            pet_id = vaccination_data.get('pet')
+            
+            try:
+                pet = Pet.objects.get(id=pet_id)
+                if pet.status == 'adopted' and pet.current_owner:
+                    # Send notification to the adopted user
+                    Notification.objects.create(
+                        user=pet.current_owner,
+                        notification_type='vaccination_administered',
+                        title=f'Vaccination Update for {pet.name}',
+                        message=f'Your pet {pet.name} has received a vaccination: {vaccination_data.get("vaccine_name")}. '
+                               f'Next due date: {vaccination_data.get("next_due_date") or "N/A"}',
+                        pet=pet
+                    )
+            except Pet.DoesNotExist:
+                pass  # Pet doesn't exist, but vaccination was created
+        
+        return response
     
     @action(detail=False, methods=['get'], permission_classes=[IsAdmin])
     def due_soon(self, request):

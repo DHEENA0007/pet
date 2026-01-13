@@ -25,6 +25,8 @@ import '../../screens/health/medical_records_screen.dart';
 import '../../screens/health/care_schedule_screen.dart';
 import '../../screens/reports/reports_screen.dart';
 import '../../screens/pets/my_adopted_pet_screen.dart';
+import '../../screens/settings/settings_screen.dart';
+import '../../screens/help/help_screen.dart';
 
 class AppRouter {
   static final GoRouter router = GoRouter(
@@ -164,6 +166,18 @@ class AppRouter {
         path: '/reports',
         name: 'reports',
         builder: (context, state) => const ReportsScreen(),
+      ),
+      
+      // Settings & Help
+      GoRoute(
+        path: '/settings',
+        name: 'settings',
+        builder: (context, state) => const SettingsScreen(),
+      ),
+      GoRoute(
+        path: '/help',
+        name: 'help',
+        builder: (context, state) => const HelpScreen(),
       ),
     ],
     

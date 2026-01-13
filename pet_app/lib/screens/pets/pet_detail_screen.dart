@@ -22,7 +22,9 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
   @override
   void initState() {
     super.initState();
-    _loadPetDetails();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadPetDetails();
+    });
   }
 
   Future<void> _loadPetDetails() async {
