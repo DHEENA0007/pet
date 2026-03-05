@@ -58,19 +58,44 @@ def create_audit_log(user, action, model_name, object_id=None, old_values=None, 
     )
 
 
+from core.services.ai_service import GroqService
+
+groq_service = GroqService()
+
 def calculate_compatibility_score(user, pet):
     """
     Calculate AI compatibility score between a user and a pet.
-    
-    This uses simple rule-based logic suitable for academic projects.
-    
-    Args:
-        user: User object with lifestyle preferences
-        pet: Pet object with characteristics
-    
-    Returns:
-        Tuple of (score, list of reasons)
+    Prioritizes Groq LLM API if available, otherwise falls back to rule-based logic.
     """
+    if groq_service.is_available():
+        user_profile = {
+            'living_space': getattr(user, 'living_space', 'Unknown'),
+            'has_yard': getattr(user, 'has_yard', False),
+            'has_children': getattr(user, 'has_children', False),
+            'has_other_pets': getattr(user, 'has_other_pets', False),
+            'activity_level': getattr(user, 'activity_level', 'Unknown'),
+            'experience_with_pets': getattr(user, 'experience_with_pets', 'Unknown'),
+        }
+        
+        pet_profile = {
+            'name': pet.name,
+            'breed': pet.breed,
+            'age_years': pet.age_years,
+            'size': pet.size,
+            'activity_level': pet.activity_level,
+            'space_requirement': pet.space_requirement,
+            'good_with_children': pet.good_with_children,
+            'good_with_other_pets': pet.good_with_other_pets,
+            'special_needs': pet.special_needs,
+            'description': pet.description,
+            'category': pet.category.name,
+        }
+        
+        score, reasons = groq_service.analyze_compatibility(user_profile, pet_profile)
+        if score is not None:
+            return score, reasons
+
+    # Use simple rule-based logic as fallback
     score = 50  # Base score
     reasons = []
     
@@ -153,13 +178,22 @@ def calculate_compatibility_score(user, pet):
 def get_care_tips(pet):
     """
     Generate AI-based care tips for a pet based on its category.
-    
-    Args:
-        pet: Pet object
-    
-    Returns:
-        List of care tips
+    Prioritizes Groq LLM API if available, otherwise falls back to rule-based logic.
     """
+    if groq_service.is_available():
+        pet_profile = {
+            'name': pet.name,
+            'breed': pet.breed,
+            'age_years': pet.age_years,
+            'category': pet.category.name,
+            'activity_level': pet.activity_level,
+            'special_needs': pet.special_needs,
+            'description': pet.description,
+        }
+        tips = groq_service.get_care_tips(pet_profile)
+        if tips:
+            return tips
+
     tips = []
     category = pet.category.name.lower()
     
@@ -217,12 +251,6 @@ def get_care_tips(pet):
 def predict_vaccination_due(pet):
     """
     Predict upcoming vaccinations based on pet's vaccination history.
-    
-    Args:
-        pet: Pet object
-    
-    Returns:
-        List of vaccination predictions
     """
     from datetime import date, timedelta
     

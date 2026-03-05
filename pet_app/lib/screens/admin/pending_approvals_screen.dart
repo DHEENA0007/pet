@@ -18,7 +18,9 @@ class _PendingApprovalsScreenState extends State<PendingApprovalsScreen> {
   @override
   void initState() {
     super.initState();
-    _loadPendingPets();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadPendingPets();
+    });
   }
 
   Future<void> _loadPendingPets() async {

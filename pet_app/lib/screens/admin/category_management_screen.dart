@@ -1,10 +1,13 @@
 /// Category Management Screen - Admin only
 /// Allows administrators to add, edit, and delete pet categories dynamically
 
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/api_constants.dart';
 import '../../core/providers/pet_provider.dart';
 import '../../core/utils/category_utils.dart';
 import '../../models/category.dart';
@@ -20,7 +23,9 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
   @override
   void initState() {
     super.initState();
-    _loadCategories();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadCategories();
+    });
   }
 
   Future<void> _loadCategories() async {
@@ -44,17 +49,66 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
     String? selectedCareDifficulty = category?.careDifficulty;
     String? selectedSpaceRequirement = category?.spaceRequirement;
     String? selectedActivityNeeds = category?.activityNeeds;
+    File? selectedImage;
+    final ImagePicker picker = ImagePicker();
 
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) {
+          
+          Future<void> pickImage() async {
+            final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+            if (image != null) {
+              setDialogState(() {
+                selectedImage = File(image.path);
+              });
+            }
+          }
+
           return AlertDialog(
             title: Text(isEditing ? 'Edit Category' : 'Add New Category'),
             content: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  // Image Picker
+                  GestureDetector(
+                    onTap: pickImage,
+                    child: Container(
+                      width: 100,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade200,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.grey.shade300),
+                        image: selectedImage != null
+                            ? DecorationImage(
+                                image: FileImage(selectedImage!),
+                                fit: BoxFit.cover,
+                              )
+                            : (category?.icon != null && category!.icon!.isNotEmpty)
+                                ? DecorationImage(
+                                    image: NetworkImage(category.icon!.startsWith('http') 
+                                        ? category.icon! 
+                                        : '${ApiConstants.baseUrl.replaceAll('/api', '')}${category.icon}'),
+                                    fit: BoxFit.cover,
+                                  )
+                                : null,
+                      ),
+                      child: selectedImage == null && (category?.icon == null || category!.icon!.isEmpty)
+                          ? Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.add_a_photo, color: Colors.grey.shade500),
+                                Text('Add Icon', style: TextStyle(color: Colors.grey.shade500, fontSize: 10)),
+                              ],
+                            )
+                          : null,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
                   // Category Name
                   TextField(
                     controller: nameController,
@@ -180,9 +234,16 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
 
                             bool success;
                             if (isEditing) {
-                              success = await provider.updateCategory(category.id, categoryData);
+                              success = await provider.updateCategory(
+                                category.id, 
+                                categoryData,
+                                imagePath: selectedImage?.path,
+                              );
                             } else {
-                              success = await provider.createCategory(categoryData);
+                              success = await provider.createCategory(
+                                categoryData,
+                                imagePath: selectedImage?.path,
+                              );
                             }
 
                             if (context.mounted) {

@@ -127,6 +127,7 @@ class PetDetailSerializer(serializers.ModelSerializer):
     current_owner_name = serializers.CharField(source='current_owner.username', read_only=True)
     images = PetImageSerializer(many=True, read_only=True)
     vaccination_count = serializers.SerializerMethodField()
+    care_tips = serializers.SerializerMethodField()
     
     class Meta:
         model = Pet
@@ -141,7 +142,7 @@ class PetDetailSerializer(serializers.ModelSerializer):
             'current_owner', 'current_owner_name',
             'good_with_children', 'good_with_other_pets',
             'activity_level', 'space_requirement',
-            'vaccination_count',
+            'vaccination_count', 'care_tips',
             'created_at', 'approved_at', 'adopted_at'
         ]
         read_only_fields = [
@@ -151,6 +152,10 @@ class PetDetailSerializer(serializers.ModelSerializer):
     
     def get_vaccination_count(self, obj):
         return obj.vaccinations.count()
+
+    def get_care_tips(self, obj):
+        from .utils import get_care_tips
+        return get_care_tips(obj)
 
 
 class PetCreateSerializer(serializers.ModelSerializer):
@@ -232,51 +237,12 @@ class AdoptionRequestCreateSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         validated_data['user'] = request.user
         
-        # Calculate AI compatibility score
-        validated_data['compatibility_score'] = self._calculate_compatibility(
-            request.user, validated_data['pet']
-        )
+        # Calculate AI compatibility score using shared logic
+        from .utils import calculate_compatibility_score
+        score, _ = calculate_compatibility_score(request.user, validated_data['pet'])
+        validated_data['compatibility_score'] = score
         
         return super().create(validated_data)
-    
-    def _calculate_compatibility(self, user, pet):
-        """Simple rule-based AI compatibility scoring"""
-        score = 50  # Base score
-        
-        # Space compatibility
-        if user.living_space:
-            if pet.space_requirement == 'small':
-                score += 10
-            elif pet.space_requirement == 'medium' and user.living_space in ['house', 'farm']:
-                score += 10
-            elif pet.space_requirement == 'large' and user.living_space == 'farm':
-                score += 10
-        
-        # Yard compatibility
-        if user.has_yard and pet.activity_level in ['medium', 'high']:
-            score += 10
-        
-        # Children compatibility
-        if user.has_children and pet.good_with_children:
-            score += 10
-        elif user.has_children and not pet.good_with_children:
-            score -= 15
-        
-        # Other pets compatibility
-        if user.has_other_pets and pet.good_with_other_pets:
-            score += 10
-        elif user.has_other_pets and not pet.good_with_other_pets:
-            score -= 15
-        
-        # Activity level match
-        if user.activity_level == pet.activity_level:
-            score += 10
-        
-        # Experience bonus
-        if user.experience_with_pets == 'experienced':
-            score += 5
-        
-        return min(max(score, 0), 100)  # Clamp between 0-100
 
 
 class AdoptionProcessSerializer(serializers.ModelSerializer):

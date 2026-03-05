@@ -122,13 +122,29 @@ class PetProvider extends ChangeNotifier {
   }
 
   // Create new category (admin only)
-  Future<bool> createCategory(Map<String, dynamic> categoryData) async {
+  Future<bool> createCategory(Map<String, dynamic> categoryData, {String? imagePath}) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      await _apiService.post(ApiConstants.categories, categoryData);
+      if (imagePath != null) {
+        // Convert dynamic map to string map for multipart
+        final Map<String, String> fields = {};
+        categoryData.forEach((key, value) {
+          if (value != null) fields[key] = value.toString();
+        });
+        
+        await _apiService.multipart(
+          'POST', 
+          ApiConstants.categories, 
+          fields,
+          files: {'icon': imagePath}
+        );
+      } else {
+        await _apiService.post(ApiConstants.categories, categoryData);
+      }
+      
       await fetchCategories(); // Refresh the list
       _isLoading = false;
       notifyListeners();
@@ -142,13 +158,29 @@ class PetProvider extends ChangeNotifier {
   }
 
   // Update category (admin only)
-  Future<bool> updateCategory(int categoryId, Map<String, dynamic> categoryData) async {
+  Future<bool> updateCategory(int categoryId, Map<String, dynamic> categoryData, {String? imagePath}) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      await _apiService.put('${ApiConstants.categories}$categoryId/', categoryData);
+      if (imagePath != null) {
+        // Convert dynamic map to string map for multipart
+        final Map<String, String> fields = {};
+        categoryData.forEach((key, value) {
+          if (value != null) fields[key] = value.toString();
+        });
+        
+        await _apiService.multipart(
+          'PUT', 
+          '${ApiConstants.categories}$categoryId/', 
+          fields,
+          files: {'icon': imagePath}
+        );
+      } else {
+        await _apiService.put('${ApiConstants.categories}$categoryId/', categoryData);
+      }
+
       await fetchCategories(); // Refresh the list
       _isLoading = false;
       notifyListeners();

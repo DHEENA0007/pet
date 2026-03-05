@@ -42,9 +42,18 @@ class UserAdmin(BaseUserAdmin):
 class PetCategoryAdmin(admin.ModelAdmin):
     """Pet category admin"""
     
-    list_display = ['name', 'care_difficulty', 'space_requirement', 'activity_needs', 'pet_count']
+    list_display = ['name', 'icon', 'care_difficulty', 'space_requirement', 'activity_needs', 'pet_count']
     search_fields = ['name', 'description']
     list_filter = ['care_difficulty', 'space_requirement']
+    
+    fieldsets = [
+        ('Category Info', {
+            'fields': ('name', 'description', 'icon')
+        }),
+        ('Care Requirements (AI Adjusted)', {
+            'fields': ('typical_lifespan', 'care_difficulty', 'space_requirement', 'activity_needs')
+        }),
+    ]
     
     def pet_count(self, obj):
         return obj.pets.count()

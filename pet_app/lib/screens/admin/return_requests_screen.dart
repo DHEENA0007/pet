@@ -19,7 +19,9 @@ class _ReturnRequestsScreenState extends State<ReturnRequestsScreen> {
   @override
   void initState() {
     super.initState();
-    _loadRequests();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadRequests();
+    });
   }
 
   Future<void> _loadRequests() async {

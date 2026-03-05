@@ -195,7 +195,7 @@ class ApiService {
 
   // Generic DELETE request
   Future<bool> delete(String endpoint) async {
-    var response = await http.delete(
+    final response = await http.delete(
       Uri.parse('${ApiConstants.baseUrl}$endpoint'),
       headers: _headers,
     );
@@ -203,13 +203,71 @@ class ApiService {
     if (response.statusCode == 401) {
       final refreshed = await refreshAccessToken();
       if (refreshed) {
-        response = await http.delete(
+        final response2 = await http.delete(
           Uri.parse('${ApiConstants.baseUrl}$endpoint'),
           headers: _headers,
         );
+        return response2.statusCode == 204 || response2.statusCode == 200;
       }
     }
 
     return response.statusCode == 204 || response.statusCode == 200;
+  }
+
+  // Generic Multipart Request (for file uploads)
+  Future<dynamic> multipart(String method, String endpoint, Map<String, String> fields, {Map<String, String>? files}) async {
+    var uri = Uri.parse('${ApiConstants.baseUrl}$endpoint');
+    var request = http.MultipartRequest(method, uri);
+
+    // Add headers
+    request.headers.addAll({
+      'Authorization': 'Bearer $_accessToken',
+    });
+
+    // Add fields
+    fields.forEach((key, value) {
+      request.fields[key] = value;
+    });
+
+    // Add files
+    if (files != null) {
+      for (var entry in files.entries) {
+        if (entry.value.isNotEmpty) {
+          request.files.add(await http.MultipartFile.fromPath(entry.key, entry.value));
+        }
+      }
+    }
+
+    // Send request
+    var streamedResponse = await request.send();
+    var response = await http.Response.fromStream(streamedResponse);
+
+    // Handle Auth Retry
+    if (response.statusCode == 401) {
+       final refreshed = await refreshAccessToken();
+       if (refreshed) {
+          // Re-create request
+          request = http.MultipartRequest(method, uri);
+          request.headers.addAll({
+            'Authorization': 'Bearer $_accessToken',
+          });
+          fields.forEach((key, value) => request.fields[key] = value);
+          if (files != null) {
+            for (var entry in files.entries) {
+              if (entry.value.isNotEmpty) {
+                request.files.add(await http.MultipartFile.fromPath(entry.key, entry.value));
+              }
+            }
+          }
+          streamedResponse = await request.send();
+          response = await http.Response.fromStream(streamedResponse);
+       }
+    }
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed multipart request: ${response.statusCode} - ${response.body}');
+    }
   }
 }

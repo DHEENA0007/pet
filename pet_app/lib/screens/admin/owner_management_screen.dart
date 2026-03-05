@@ -18,7 +18,9 @@ class _OwnerManagementScreenState extends State<OwnerManagementScreen> {
   @override
   void initState() {
     super.initState();
-    _loadOwners();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadOwners();
+    });
   }
 
   Future<void> _loadOwners() async {

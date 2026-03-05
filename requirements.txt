@@ -17,5 +17,16 @@ django-cors-headers>=4.9.0
 # Image Processing
 Pillow>=12.0.0
 
+# Database Drivers
+psycopg2-binary>=2.9.11
+dj-database-url>=3.1.2
+
+# Production Server
+gunicorn>=21.2.0
+whitenoise>=6.6.0
+
+# Environment Variables
+python-dotenv>=1.0.0
+
 # Development dependencies
-# python-dotenv>=1.0.0  # For environment variables (optional)
+# groq>=0.4.0  # For AI features

@@ -27,7 +27,9 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen> {
   @override
   void initState() {
     super.initState();
-    _loadRecords();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadRecords();
+    });
   }
 
   Future<void> _loadRecords() async {

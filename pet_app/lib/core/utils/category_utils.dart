@@ -123,6 +123,18 @@ class CategoryUtils {
         return const Color(0xFF6B8E23); // Olive
       case 'exotic':
         return const Color(0xFF9932CC); // Purple
+      case 'insect':
+      case 'insects':
+      case 'spider':
+      case 'tarantula':
+        return const Color(0xFF800080); // Purple
+      case 'farm':
+      case 'horse':
+      case 'cow':
+      case 'pig':
+      case 'chicken':
+      case 'duck':
+        return const Color(0xFFA0522D); // Sienna
       default:
         return const Color(0xFF2E8B57); // SeaGreen
     }

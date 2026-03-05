@@ -68,14 +68,7 @@ class _SplashScreenState extends State<SplashScreen>
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              AppColors.primaryGreen,
-              Color(0xFF4CAF50),
-            ],
-          ),
+          color: AppColors.milkyCream,
         ),
         child: Center(
           child: AnimatedBuilder(
@@ -90,35 +83,37 @@ class _SplashScreenState extends State<SplashScreen>
                     children: [
                       // Logo
                       Container(
-                        width: 120,
-                        height: 120,
+                        width: 150,
+                        height: 150,
                         decoration: BoxDecoration(
+                          shape: BoxShape.circle,
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(30),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
+                              color: AppColors.primaryWarmBrown.withOpacity(0.2),
+                              blurRadius: 30,
+                              offset: const Offset(0, 15),
                             ),
                           ],
                         ),
-                        child: const Icon(
-                          Icons.pets,
-                          size: 60,
-                          color: AppColors.primaryGreen,
+                        child: Padding(
+                          padding: const EdgeInsets.all(20.0),
+                          child: Image.asset(
+                            'assets/images/auth_hero.png',
+                            fit: BoxFit.contain,
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 32),
                       
                       // App Name
-                      const Text(
+                      Text(
                         'Pet Adoption',
                         style: TextStyle(
-                          fontSize: 32,
+                          fontSize: 36,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          letterSpacing: 1.5,
+                          color: AppColors.accentDarkBrown,
+                          letterSpacing: 1.2,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -128,14 +123,15 @@ class _SplashScreenState extends State<SplashScreen>
                         'Find your perfect companion',
                         style: TextStyle(
                           fontSize: 16,
-                          color: Colors.white.withOpacity(0.9),
+                          color: AppColors.textGrey,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                       const SizedBox(height: 48),
                       
                       // Loading indicator
                       const CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryWarmBrown),
                       ),
                     ],
                   ),

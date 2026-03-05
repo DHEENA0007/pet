@@ -29,7 +29,9 @@ class _VaccinationManagementScreenState extends State<VaccinationManagementScree
   @override
   void initState() {
     super.initState();
-    _loadVaccinations();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadVaccinations();
+    });
   }
 
   Future<void> _loadVaccinations() async {

@@ -30,7 +30,7 @@ from .serializers import (
     DashboardStatsSerializer, AIRecommendationSerializer
 )
 from .permissions import IsAdmin, IsOwnerOrAdmin
-from .utils import create_notification, create_audit_log
+from .utils import create_notification, create_audit_log, calculate_compatibility_score
 
 
 # ==================== Authentication Views ====================
@@ -636,7 +636,8 @@ class AIRecommendationView(APIView):
         recommendations = []
         
         for pet in available_pets:
-            score, reasons = self._calculate_compatibility(user, pet)
+            # Use the shared utility function which now supports Groq AI
+            score, reasons = calculate_compatibility_score(user, pet)
             recommendations.append({
                 'pet': PetListSerializer(pet).data,
                 'compatibility_score': score,
@@ -648,67 +649,6 @@ class AIRecommendationView(APIView):
         
         # Return top 10 recommendations
         return Response(recommendations[:10])
-    
-    def _calculate_compatibility(self, user, pet):
-        """Calculate AI compatibility score with reasons"""
-        score = 50
-        reasons = []
-        
-        # Space compatibility
-        if user.living_space:
-            if pet.space_requirement == 'small':
-                score += 10
-                reasons.append("Suitable for any living space")
-            elif pet.space_requirement == 'medium':
-                if user.living_space in ['house', 'farm']:
-                    score += 10
-                    reasons.append("Good match for your home size")
-            elif pet.space_requirement == 'large':
-                if user.living_space == 'farm':
-                    score += 10
-                    reasons.append("Perfect for your farm/large property")
-                elif user.living_space == 'apartment':
-                    score -= 10
-        
-        # Yard compatibility
-        if user.has_yard:
-            if pet.activity_level in ['medium', 'high']:
-                score += 10
-                reasons.append("Your yard is great for this active pet")
-        
-        # Children compatibility
-        if user.has_children:
-            if pet.good_with_children:
-                score += 15
-                reasons.append("Great with children!")
-            else:
-                score -= 20
-        
-        # Other pets compatibility
-        if user.has_other_pets:
-            if pet.good_with_other_pets:
-                score += 10
-                reasons.append("Gets along with other pets")
-            else:
-                score -= 15
-        
-        # Activity level match
-        if user.activity_level and pet.activity_level:
-            if user.activity_level == pet.activity_level:
-                score += 15
-                reasons.append(f"Matches your {user.activity_level} activity level")
-        
-        # Experience bonus
-        if user.experience_with_pets == 'experienced':
-            score += 5
-            if pet.special_needs:
-                reasons.append("Your experience is great for pets with special needs")
-        elif user.experience_with_pets == 'none':
-            if pet.category.care_difficulty == 'easy':
-                score += 10
-                reasons.append("Perfect first pet!")
-        
-        return min(max(score, 0), 100), reasons
 
 
 # ==================== Report Views ====================

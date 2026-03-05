@@ -23,7 +23,9 @@ class _AdminAdoptionRequestsScreenState extends State<AdminAdoptionRequestsScree
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    _loadRequests();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadRequests();
+    });
   }
 
   @override
