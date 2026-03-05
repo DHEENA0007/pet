@@ -2,9 +2,7 @@
 
 class ApiConstants {
   // Base URL - Change this to your Django server URL
-  // static const String baseUrl = 'http://10.0.2.2:8000/api';  // Android emulator
-  static const String baseUrl = 'http://localhost:8000/api';  // Android emulator
-  // static const String baseUrl = 'http://10.207.192.243:8000/api';   // Physical device
+  static const String baseUrl = 'https://pet-vew4.onrender.com/api';
   
   // Auth Endpoints
   static const String login = '/auth/login/';
