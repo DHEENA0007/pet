@@ -247,8 +247,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   const Color(0xFFFFF3E0), 
                   const Color(0xFFFF9800),
                   onTap: () {
-                     // TODO: Navigate to messages
-                     setState(() => _currentIndex = 2); // Redirect to My Pets as fallback for now
+                     ScaffoldMessenger.of(context).showSnackBar(
+                       const SnackBar(content: Text('Messaging feature coming soon!')),
+                     );
                   },
                 )),
               ],
@@ -990,19 +991,28 @@ class _HomeScreenState extends State<HomeScreen> {
                       color: Colors.white,
                       shape: BoxShape.circle,
                       boxShadow: [BoxShadow(color: AppColors.primaryWarmBrown.withOpacity(0.2), blurRadius: 20, offset: const Offset(0, 10))],
-                      image: const DecorationImage(
-                          image: NetworkImage("https://i.pravatar.cc/300"), // Placeholder
-                          fit: BoxFit.cover,
-                      ),
+                      image: user?.profileImage != null && user!.profileImage!.isNotEmpty
+                          ? DecorationImage(
+                              image: NetworkImage(
+                                  user.profileImage!.startsWith('http')
+                                      ? user.profileImage!
+                                      : '${ApiConstants.baseUrl.replaceAll('/api', '')}${user.profileImage}'
+                              ),
+                              fit: BoxFit.cover,
+                            )
+                          : null,
                    ),
+                   child: user?.profileImage == null || user!.profileImage!.isEmpty
+                       ? const Icon(Icons.person, size: 60, color: AppColors.primaryWarmBrown)
+                       : null,
                 ),
                 const SizedBox(height: 24),
                 Text(
-                   user?.username ?? "User",
+                   user?.fullName.isNotEmpty == true ? user!.fullName : (user?.username ?? "User"),
                    style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.accentDarkBrown),
                 ),
                 Text(
-                   user?.email ?? "email@example.com",
+                   user?.email.isNotEmpty == true ? user!.email : "No email provided",
                    style: GoogleFonts.poppins(fontSize: 14, color: AppColors.textGrey),
                 ),
                 const SizedBox(height: 48),
@@ -1017,10 +1027,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
 
                 // Menu Items
-                _buildProfileMenuItem(Icons.person_outline, "Edit Profile", onTap: () {}),
-                _buildProfileMenuItem(Icons.settings_outlined, "Settings", onTap: () {}),
-                _buildProfileMenuItem(Icons.help_outline, "Help & Support", onTap: () {}),
-                _buildProfileMenuItem(Icons.history_rounded, "Adoption History", onTap: () {}),
+                _buildProfileMenuItem(Icons.person_outline, "Edit Profile", onTap: () => context.push('/profile')),
+                _buildProfileMenuItem(Icons.settings_outlined, "Settings", onTap: () => context.push('/settings')),
+                _buildProfileMenuItem(Icons.help_outline, "Help & Support", onTap: () => context.push('/help')),
+                _buildProfileMenuItem(Icons.history_rounded, "Adoption History", onTap: () => context.push('/my-requests')),
                 
                 const SizedBox(height: 48),
                 

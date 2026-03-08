@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../constants/api_constants.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../models/user.dart';
 
 class AuthProvider extends ChangeNotifier {
@@ -109,12 +110,31 @@ class AuthProvider extends ChangeNotifier {
   }
 
   // Update profile
-  Future<bool> updateProfile(Map<String, dynamic> profileData) async {
+  Future<bool> updateProfile(Map<String, dynamic> profileData, {XFile? profileImage}) async {
     _isLoading = true;
     notifyListeners();
 
     try {
-      final data = await _apiService.put(ApiConstants.profile, profileData);
+      dynamic data;
+      if (profileImage != null) {
+        // Use multipart request
+        final Map<String, String> stringFields = {};
+        profileData.forEach((key, value) {
+          if (value != null) {
+            stringFields[key] = value.toString();
+          }
+        });
+        
+        data = await _apiService.multipart(
+          'PUT', 
+          ApiConstants.profile, 
+          stringFields,
+          xFiles: {'profile_image': profileImage}
+        );
+      } else {
+        data = await _apiService.put(ApiConstants.profile, profileData);
+      }
+      
       _user = User.fromJson(data);
       _isLoading = false;
       notifyListeners();

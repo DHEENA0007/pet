@@ -215,7 +215,7 @@ class ApiService {
   }
 
   // Generic Multipart Request (for file uploads)
-  Future<dynamic> multipart(String method, String endpoint, Map<String, String> fields, {Map<String, String>? files}) async {
+  Future<dynamic> multipart(String method, String endpoint, Map<String, String> fields, {Map<String, String>? files, Map<String, dynamic>? xFiles}) async {
     var uri = Uri.parse('${ApiConstants.baseUrl}$endpoint');
     var request = http.MultipartRequest(method, uri);
 
@@ -238,6 +238,20 @@ class ApiService {
       }
     }
 
+    if (xFiles != null) {
+      for (var entry in xFiles.entries) {
+        final xFile = entry.value;
+        if (xFile != null) {
+          final bytes = await xFile.readAsBytes();
+          request.files.add(http.MultipartFile.fromBytes(
+            entry.key,
+            bytes,
+            filename: xFile.name,
+          ));
+        }
+      }
+    }
+
     // Send request
     var streamedResponse = await request.send();
     var response = await http.Response.fromStream(streamedResponse);
@@ -256,6 +270,19 @@ class ApiService {
             for (var entry in files.entries) {
               if (entry.value.isNotEmpty) {
                 request.files.add(await http.MultipartFile.fromPath(entry.key, entry.value));
+              }
+            }
+          }
+          if (xFiles != null) {
+            for (var entry in xFiles.entries) {
+              final xFile = entry.value;
+              if (xFile != null) {
+                final bytes = await xFile.readAsBytes();
+                request.files.add(http.MultipartFile.fromBytes(
+                  entry.key,
+                  bytes,
+                  filename: xFile.name,
+                ));
               }
             }
           }

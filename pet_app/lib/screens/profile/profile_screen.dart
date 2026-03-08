@@ -1,7 +1,11 @@
 /// Profile Screen
 
+import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
+import '../../core/constants/api_constants.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/providers/auth_provider.dart';
 
@@ -18,7 +22,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   late TextEditingController _lastNameController;
   late TextEditingController _phoneController;
   late TextEditingController _addressController;
-  
+
   String? _livingSpace;
   bool _hasYard = false;
   bool _hasChildren = false;
@@ -26,16 +30,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String? _activityLevel;
   String? _experienceWithPets;
 
+  XFile? _selectedImage;
+  final ImagePicker _picker = ImagePicker();
+
+  Future<void> _pickImage() async {
+    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _selectedImage = pickedFile;
+      });
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     final user = Provider.of<AuthProvider>(context, listen: false).user;
-    
+
     _firstNameController = TextEditingController(text: user?.firstName);
     _lastNameController = TextEditingController(text: user?.lastName);
     _phoneController = TextEditingController(text: user?.phone);
     _addressController = TextEditingController(text: user?.address);
-    
+
     _livingSpace = user?.livingSpace;
     _hasYard = user?.hasYard ?? false;
     _hasChildren = user?.hasChildren ?? false;
@@ -57,7 +73,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    
+
     final success = await authProvider.updateProfile({
       'first_name': _firstNameController.text.trim(),
       'last_name': _lastNameController.text.trim(),
@@ -69,13 +85,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
       'has_other_pets': _hasOtherPets,
       'activity_level': _activityLevel,
       'experience_with_pets': _experienceWithPets,
-    });
+    }, profileImage: _selectedImage);
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(success ? 'Profile updated!' : 'Update failed'),
-          backgroundColor: success ? AppColors.primaryGreen : AppColors.criticalRed,
+          backgroundColor: success
+              ? AppColors.primaryGreen
+              : AppColors.criticalRed,
         ),
       );
     }
@@ -91,7 +109,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             onPressed: _saveProfile,
             child: const Text(
               'Save',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],
@@ -103,13 +124,113 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
+                // Profile Image and Header Info
+                Center(
+                  child: Stack(
+                    children: [
+                      Container(
+                        width: 120,
+                        height: 120,
+                        decoration: BoxDecoration(
+                          color: AppColors.milkyCream,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primaryWarmBrown.withOpacity(
+                                0.2,
+                              ),
+                              blurRadius: 10,
+                              offset: const Offset(0, 5),
+                            ),
+                          ],
+                        ),
+                        child: ClipOval(
+                          child: _selectedImage != null
+                              ? (kIsWeb
+                                    ? Image.network(
+                                        _selectedImage!.path,
+                                        fit: BoxFit.cover,
+                                      )
+                                    : Image.file(
+                                        File(_selectedImage!.path),
+                                        fit: BoxFit.cover,
+                                      ))
+                              : (authProvider.user?.profileImage != null &&
+                                        authProvider
+                                            .user!
+                                            .profileImage!
+                                            .isNotEmpty
+                                    ? Image.network(
+                                        authProvider.user!.profileImage!
+                                                .startsWith('http')
+                                            ? authProvider.user!.profileImage!
+                                            : '${ApiConstants.baseUrl.replaceAll('/api', '')}${authProvider.user!.profileImage}',
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (c, e, s) => const Icon(
+                                          Icons.person,
+                                          size: 60,
+                                          color: AppColors.primaryWarmBrown,
+                                        ),
+                                      )
+                                    : const Icon(
+                                        Icons.person,
+                                        size: 60,
+                                        color: AppColors.primaryWarmBrown,
+                                      )),
+                        ),
+                      ),
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: GestureDetector(
+                          onTap: _pickImage,
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: const BoxDecoration(
+                              color: AppColors.primaryWarmBrown,
+                              shape: BoxShape.circle,
+                              border: Border.fromBorderSide(
+                                BorderSide(color: Colors.white, width: 2),
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.camera_alt,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Center(
+                  child: Text(
+                    authProvider.user?.username ?? "User",
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.accentDarkBrown,
+                    ),
+                  ),
+                ),
+                Center(
+                  child: Text(
+                    authProvider.user?.email ?? "No email provided",
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(color: AppColors.textGrey),
+                  ),
+                ),
+                const SizedBox(height: 32),
+
                 // Basic Info Section
                 Text(
                   'Basic Information',
                   style: Theme.of(context).textTheme.headlineSmall,
                 ),
                 const SizedBox(height: 16),
-                
+
                 Row(
                   children: [
                     Expanded(
@@ -132,7 +253,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                
+
                 TextFormField(
                   controller: _phoneController,
                   keyboardType: TextInputType.phone,
@@ -142,7 +263,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                
+
                 TextFormField(
                   controller: _addressController,
                   maxLines: 2,
@@ -153,7 +274,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
                 const SizedBox(height: 32),
-                
+
                 // Lifestyle Section (for AI matching)
                 Text(
                   'Lifestyle (for AI Matching)',
@@ -165,7 +286,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Living Space
                 DropdownButtonFormField<String>(
                   value: _livingSpace,
@@ -174,16 +295,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     prefixIcon: Icon(Icons.home),
                   ),
                   items: const [
-                    DropdownMenuItem(value: 'apartment', child: Text('Apartment')),
+                    DropdownMenuItem(
+                      value: 'apartment',
+                      child: Text('Apartment'),
+                    ),
                     DropdownMenuItem(value: 'house', child: Text('House')),
-                    DropdownMenuItem(value: 'farm', child: Text('Farm/Large Property')),
+                    DropdownMenuItem(
+                      value: 'farm',
+                      child: Text('Farm/Large Property'),
+                    ),
                   ],
                   onChanged: (value) {
                     setState(() => _livingSpace = value);
                   },
                 ),
                 const SizedBox(height: 16),
-                
+
                 SwitchListTile(
                   title: const Text('I have a yard'),
                   subtitle: const Text('Outdoor space for pets'),
@@ -192,7 +319,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     setState(() => _hasYard = value);
                   },
                 ),
-                
+
                 SwitchListTile(
                   title: const Text('I have children'),
                   subtitle: const Text('Kids in the household'),
@@ -201,7 +328,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     setState(() => _hasChildren = value);
                   },
                 ),
-                
+
                 SwitchListTile(
                   title: const Text('I have other pets'),
                   subtitle: const Text('Existing pets at home'),
@@ -211,7 +338,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   },
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Activity Level
                 DropdownButtonFormField<String>(
                   value: _activityLevel,
@@ -220,16 +347,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     prefixIcon: Icon(Icons.directions_run),
                   ),
                   items: const [
-                    DropdownMenuItem(value: 'low', child: Text('Low - Prefer relaxing')),
-                    DropdownMenuItem(value: 'medium', child: Text('Medium - Moderate activity')),
-                    DropdownMenuItem(value: 'high', child: Text('High - Very active')),
+                    DropdownMenuItem(
+                      value: 'low',
+                      child: Text('Low - Prefer relaxing'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'medium',
+                      child: Text('Medium - Moderate activity'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'high',
+                      child: Text('High - Very active'),
+                    ),
                   ],
                   onChanged: (value) {
                     setState(() => _activityLevel = value);
                   },
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Experience
                 DropdownButtonFormField<String>(
                   value: _experienceWithPets,
@@ -238,16 +374,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     prefixIcon: Icon(Icons.pets),
                   ),
                   items: const [
-                    DropdownMenuItem(value: 'none', child: Text('None - First time pet owner')),
-                    DropdownMenuItem(value: 'some', child: Text('Some - Had pets before')),
-                    DropdownMenuItem(value: 'experienced', child: Text('Experienced - Lifelong pet owner')),
+                    DropdownMenuItem(
+                      value: 'none',
+                      child: Text('None - First time pet owner'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'some',
+                      child: Text('Some - Had pets before'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'experienced',
+                      child: Text('Experienced - Lifelong pet owner'),
+                    ),
                   ],
                   onChanged: (value) {
                     setState(() => _experienceWithPets = value);
                   },
                 ),
                 const SizedBox(height: 32),
-                
+
                 // Save Button
                 SizedBox(
                   height: 56,
