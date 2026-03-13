@@ -8,7 +8,6 @@ import '../../core/providers/pet_provider.dart';
 import '../../core/providers/adoption_provider.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/utils/category_utils.dart';
-import '../../core/providers/chat_provider.dart';
 
 class PetDetailScreen extends StatefulWidget {
   final int petId;
@@ -54,50 +53,59 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
                 expandedHeight: 300,
                 pinned: true,
                 flexibleSpace: FlexibleSpaceBar(
-                  background: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          AppColors.primaryGreen.withOpacity(0.8),
-                          AppColors.primaryGreen,
-                        ],
+                  background: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      // Pet image or gradient fallback
+                      if (pet.primaryImage != null && pet.primaryImage!.isNotEmpty)
+                        Image.network(
+                          pet.primaryImage!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => _buildHeaderGradient(pet),
+                        )
+                      else
+                        _buildHeaderGradient(pet),
+                      // Dark gradient overlay for text readability
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              Colors.black.withOpacity(0.55),
+                            ],
+                            stops: const [0.4, 1.0],
+                          ),
+                        ),
                       ),
-                    ),
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const SizedBox(height: 40),
-                          CircleAvatar(
-                            radius: 60,
-                            backgroundColor: Colors.white.withOpacity(0.2),
-                            child: Icon(
-                              CategoryUtils.getCategoryIcon(pet.categoryName ?? ''),
-                              size: 60,
-                              color: Colors.white,
+                      // Name & breed at bottom
+                      Positioned(
+                        bottom: 16,
+                        left: 16,
+                        right: 16,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              pet.name,
+                              style: const TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            pet.name,
-                            style: const TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                            Text(
+                              '${pet.categoryName ?? ''} • ${pet.breed ?? 'Unknown breed'}',
+                              style: TextStyle(
+                                fontSize: 15,
+                                color: Colors.white.withOpacity(0.9),
+                              ),
                             ),
-                          ),
-                          Text(
-                            '${pet.categoryName ?? ''} • ${pet.breed ?? 'Unknown breed'}',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.white.withOpacity(0.9),
-                            ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ),
               ),
@@ -229,6 +237,28 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildHeaderGradient(pet) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            AppColors.primaryGreen.withOpacity(0.8),
+            AppColors.primaryGreen,
+          ],
+        ),
+      ),
+      child: Center(
+        child: Icon(
+          CategoryUtils.getCategoryIcon(pet.categoryName ?? ''),
+          size: 80,
+          color: Colors.white.withOpacity(0.6),
+        ),
       ),
     );
   }

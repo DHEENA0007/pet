@@ -11,6 +11,7 @@ import '../../core/providers/pet_provider.dart';
 import '../../core/providers/adoption_provider.dart';
 
 import '../../models/category.dart';
+import '../../models/pet.dart';
 import '../../widgets/pet_card.dart';
 import '../../core/providers/chat_provider.dart';
 
@@ -309,11 +310,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   Icons.message_rounded, 
                   const Color(0xFFFFF3E0), 
                   const Color(0xFFFF9800),
-                  onTap: () {
-                     ScaffoldMessenger.of(context).showSnackBar(
-                       const SnackBar(content: Text('Messaging feature coming soon!')),
-                     );
-                  },
+                  onTap: () => context.push('/messages'),
                 )),
               ],
             ),
@@ -881,56 +878,270 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildMyPetsTab() {
-     return Center(
-       child: Consumer<PetProvider>(
-         builder: (context, provider, _) {
-           return SafeArea(
-             child: Column(
-               children: [
-                 Padding(
-                   padding: const EdgeInsets.all(24),
-                   child: Text(
-                     "My Pets",
-                     style: GoogleFonts.poppins(
-                       fontSize: 24,
-                       fontWeight: FontWeight.bold,
-                       color: AppColors.accentDarkBrown,
-                     ),
-                   ),
-                 ),
-                 Expanded(
-                   child: SingleChildScrollView(
-                     padding: const EdgeInsets.symmetric(horizontal: 24),
-                     child: Column(
-                       children: [
-                          Container(
-                            padding: const EdgeInsets.all(20),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(20),
+    return Consumer<PetProvider>(
+      builder: (context, provider, _) {
+        // Trigger fetch when tab is shown
+        if (provider.adoptedPets.isEmpty && provider.myPets.isEmpty) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            provider.fetchAdoptedPets();
+            provider.fetchMyPets();
+          });
+        }
+        return SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      "My Pets",
+                      style: GoogleFonts.poppins(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.accentDarkBrown,
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.refresh, color: AppColors.primaryWarmBrown),
+                      onPressed: () {
+                        provider.fetchAdoptedPets();
+                        provider.fetchMyPets();
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Adopted Pets Section
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(8, 8, 8, 12),
+                        child: Row(
+                          children: [
+                            Icon(Icons.favorite_rounded, size: 18, color: AppColors.primaryWarmBrown),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Adopted Pets',
+                              style: GoogleFonts.poppins(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.accentDarkBrown,
+                              ),
                             ),
-                            child: const Center(child: Text("Adopted Pets will appear here")),
-                          ),
-                          const SizedBox(height: 20),
-                          Container(
-                            padding: const EdgeInsets.all(20),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(20),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppColors.primaryWarmBrown.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                '${provider.adoptedPets.length}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.primaryWarmBrown,
+                                ),
+                              ),
                             ),
-                            child: const Center(child: Text("Posted Pets will appear here")),
+                          ],
+                        ),
+                      ),
+                      if (provider.adoptedPets.isEmpty)
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
                           ),
-                       ],
-                     ),
-                   ),
-                 ),
-                 const SizedBox(height: 80),
-               ],
-             ),
-           );
-         }
-       ),
-     );
+                          child: Column(
+                            children: [
+                              Icon(Icons.pets, size: 40, color: AppColors.textGrey.withOpacity(0.4)),
+                              const SizedBox(height: 8),
+                              Text(
+                                'No adopted pets yet',
+                                style: TextStyle(color: AppColors.textGrey, fontSize: 14),
+                              ),
+                            ],
+                          ),
+                        )
+                      else
+                        ...provider.adoptedPets.map((pet) => _buildMyPetCard(pet, isAdopted: true)),
+
+                      const SizedBox(height: 24),
+
+                      // My Posts Section
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(8, 0, 8, 12),
+                        child: Row(
+                          children: [
+                            Icon(Icons.add_circle_rounded, size: 18, color: AppColors.primaryWarmBrown),
+                            const SizedBox(width: 8),
+                            Text(
+                              'My Posts',
+                              style: GoogleFonts.poppins(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.accentDarkBrown,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppColors.primaryWarmBrown.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                '${provider.myPets.length}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.primaryWarmBrown,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (provider.myPets.isEmpty)
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Column(
+                            children: [
+                              Icon(Icons.add_a_photo_outlined, size: 40, color: AppColors.textGrey.withOpacity(0.4)),
+                              const SizedBox(height: 8),
+                              Text(
+                                'You haven\'t posted any pets yet',
+                                style: TextStyle(color: AppColors.textGrey, fontSize: 14),
+                              ),
+                            ],
+                          ),
+                        )
+                      else
+                        ...provider.myPets.map((pet) => _buildMyPetCard(pet, isAdopted: false)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildMyPetCard(Pet pet, {required bool isAdopted}) {
+    final statusColor = pet.status == 'available'
+        ? Colors.green
+        : pet.status == 'adopted'
+            ? AppColors.primaryWarmBrown
+            : Colors.orange;
+    final statusLabel = pet.status == 'available'
+        ? 'Available'
+        : pet.status == 'adopted'
+            ? 'Adopted'
+            : pet.status == 'pending'
+                ? 'Pending'
+                : pet.status;
+
+    return GestureDetector(
+      onTap: () => context.push('/pet/${pet.id}'),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: const BorderRadius.horizontal(left: Radius.circular(16)),
+              child: SizedBox(
+                width: 90,
+                height: 90,
+                child: pet.primaryImage != null && pet.primaryImage!.isNotEmpty
+                    ? Image.network(
+                        pet.primaryImage!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          color: AppColors.primaryWarmBrown.withOpacity(0.1),
+                          child: Icon(Icons.pets, color: AppColors.primaryWarmBrown, size: 32),
+                        ),
+                      )
+                    : Container(
+                        color: AppColors.primaryWarmBrown.withOpacity(0.1),
+                        child: Icon(Icons.pets, color: AppColors.primaryWarmBrown, size: 32),
+                      ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      pet.name,
+                      style: GoogleFonts.poppins(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.accentDarkBrown,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      [pet.categoryName, pet.breed].where((s) => s != null && s.isNotEmpty).join(' · '),
+                      style: TextStyle(fontSize: 13, color: AppColors.textGrey),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: statusColor.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        statusLabel,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: statusColor,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: Icon(Icons.chevron_right, color: AppColors.textGrey),
+            ),
+          ],
+        ),
+      ),
+    );
   }
   Widget _buildDynamicCategoryGrid(List<PetCategory> categories) {
     if (categories.isEmpty) return const SizedBox();
