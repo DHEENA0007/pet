@@ -47,11 +47,20 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadData() async {
     final petProvider = Provider.of<PetProvider>(context, listen: false);
     final adoptionProvider = Provider.of<AdoptionProvider>(context, listen: false);
-    
+
     await petProvider.fetchCategories();
     await petProvider.fetchPets();
     await adoptionProvider.fetchRecommendations();
     Provider.of<ChatProvider>(context, listen: false).fetchUnreadCount();
+  }
+
+  void _switchTab(int index) {
+    setState(() => _currentIndex = index);
+    if (index == 2) {
+      final provider = Provider.of<PetProvider>(context, listen: false);
+      provider.fetchAdoptedPets();
+      provider.fetchMyPets();
+    }
   }
 
   @override
@@ -130,7 +139,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildNavItem(int index, IconData icon, String label) {
     final isSelected = _currentIndex == index;
     return GestureDetector(
-      onTap: () => setState(() => _currentIndex = index),
+      onTap: () => _switchTab(index),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -302,7 +311,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   Icons.pets, 
                   const Color(0xFFE8F5E9), 
                   const Color(0xFF4CAF50),
-                  onTap: () => setState(() => _currentIndex = 2),
+                  onTap: () => _switchTab(2),
                 )),
                 const SizedBox(width: 16),
                 Expanded(child: _buildShortcutCard(
@@ -373,7 +382,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 TextButton(
-                  onPressed: () => setState(() => _currentIndex = 1),
+                  onPressed: () => _switchTab(1),
                   child: Text(
                     'See All',
                     style: GoogleFonts.poppins(
@@ -880,13 +889,6 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildMyPetsTab() {
     return Consumer<PetProvider>(
       builder: (context, provider, _) {
-        // Trigger fetch when tab is shown
-        if (provider.adoptedPets.isEmpty && provider.myPets.isEmpty) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            provider.fetchAdoptedPets();
-            provider.fetchMyPets();
-          });
-        }
         return SafeArea(
           child: Column(
             children: [

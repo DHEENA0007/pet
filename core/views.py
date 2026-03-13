@@ -286,14 +286,14 @@ class PetViewSet(viewsets.ModelViewSet):
         
         return Response({'message': 'Pet rejected'})
     
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated])
     def my_posts(self, request):
         """Get pets posted by current user"""
         pets = Pet.objects.filter(posted_by=request.user)
         serializer = PetListSerializer(pets, many=True)
         return Response(serializer.data)
-    
-    @action(detail=False, methods=['get'])
+
+    @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated])
     def my_adopted(self, request):
         """Get pets adopted by current user"""
         pets = Pet.objects.filter(current_owner=request.user, status='adopted')
