@@ -2,8 +2,8 @@
 
 class ApiConstants {
   // Base URL - Change this to your Django server URL
-  //static const String baseUrl = 'https://pet-vew4.onrender.com/api';
-  static const String baseUrl = 'http://127.0.0.1:8000/api';
+  static const String baseUrl = 'https://pet-vew4.onrender.com/api';
+  //static const String baseUrl = 'http://127.0.0.1:8000/api';
   // Auth Endpoints
   static const String login = '/auth/login/';
   static const String register = '/auth/register/';
@@ -38,4 +38,11 @@ class ApiConstants {
   
   // Notifications
   static const String notifications = '/notifications/';
+
+  // Messaging
+  static const String messages = '/messages/';
+  static const String conversations = '/messages/conversations/';
+
+  // AI Chatbot
+  static const String chatbot = '/chatbot/';
 }

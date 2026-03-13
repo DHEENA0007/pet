@@ -11,14 +11,18 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
 from django.utils import timezone
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Max, OuterRef, Subquery
 from django.db.models.functions import TruncMonth
 from datetime import date, timedelta
+import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 from .models import (
     User, PetCategory, Owner, Pet, PetImage, AdoptionRequest,
     ReturnRequest, Vaccination, MedicalRecord, CareSchedule,
-    CareLog, Notification, AuditLog
+    CareLog, Notification, AuditLog, Message
 )
 from .serializers import (
     UserRegistrationSerializer, UserSerializer, UserProfileUpdateSerializer,
@@ -29,7 +33,8 @@ from .serializers import (
     VaccinationSerializer, MedicalRecordSerializer,
     CareScheduleSerializer, CareLogSerializer,
     NotificationSerializer, AuditLogSerializer,
-    DashboardStatsSerializer, AIRecommendationSerializer
+    DashboardStatsSerializer, AIRecommendationSerializer,
+    MessageSerializer, ConversationSerializer,
 )
 from .permissions import IsAdmin, IsOwnerOrAdmin
 from .utils import create_notification, create_audit_log, calculate_compatibility_score
@@ -713,3 +718,160 @@ class ReportView(APIView):
         )
         
         return Response(list(upcoming))
+
+
+# ==================== Messaging Views ====================
+
+class MessageViewSet(viewsets.ModelViewSet):
+    """Direct messaging between users"""
+    serializer_class = MessageSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    http_method_names = ['get', 'post', 'delete']
+
+    def get_queryset(self):
+        user = self.request.user
+        other_user_id = self.request.query_params.get('with')
+        if other_user_id:
+            # Mark as read all messages FROM the other user to current user
+            Message.objects.filter(
+                sender_id=other_user_id, receiver=user, is_read=False
+            ).update(is_read=True)
+            return Message.objects.filter(
+                Q(sender=user, receiver_id=other_user_id) |
+                Q(sender_id=other_user_id, receiver=user)
+            ).select_related('sender', 'receiver', 'pet')
+        return Message.objects.none()
+
+    def create(self, request, *args, **kwargs):
+        receiver_id = request.data.get('receiver')
+        content = request.data.get('content', '').strip()
+        pet_id = request.data.get('pet')
+
+        if not receiver_id or not content:
+            return Response({'detail': 'receiver and content are required.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        try:
+            receiver = User.objects.get(id=receiver_id)
+        except User.DoesNotExist:
+            return Response({'detail': 'Receiver not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if receiver == request.user:
+            return Response({'detail': 'Cannot message yourself.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        msg = Message(sender=request.user, receiver=receiver, content=content)
+        if pet_id:
+            try:
+                msg.pet = Pet.objects.get(id=pet_id)
+            except Pet.DoesNotExist:
+                pass
+        msg.save()
+        serializer = MessageSerializer(msg)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=False, methods=['get'])
+    def conversations(self, request):
+        """List all unique conversations for current user with last message preview."""
+        user = request.user
+
+        # Get IDs of all people user has chatted with
+        sent_to = Message.objects.filter(sender=user).values_list('receiver_id', flat=True)
+        received_from = Message.objects.filter(receiver=user).values_list('sender_id', flat=True)
+        other_ids = set(list(sent_to) + list(received_from))
+
+        conversations = []
+        for other_id in other_ids:
+            last_msg = Message.objects.filter(
+                Q(sender=user, receiver_id=other_id) |
+                Q(sender_id=other_id, receiver=user)
+            ).order_by('-created_at').first()
+
+            if not last_msg:
+                continue
+
+            other_user = User.objects.get(id=other_id)
+            other_name = other_user.get_full_name() or other_user.username
+            unread = Message.objects.filter(sender_id=other_id, receiver=user, is_read=False).count()
+
+            conversations.append({
+                'other_user_id': other_id,
+                'other_user_name': other_name,
+                'other_user_username': other_user.username,
+                'last_message': last_msg.content,
+                'last_message_time': last_msg.created_at,
+                'unread_count': unread,
+                'is_last_mine': last_msg.sender == user,
+            })
+
+        conversations.sort(key=lambda c: c['last_message_time'], reverse=True)
+        serializer = ConversationSerializer(conversations, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
+    def unread_count(self, request):
+        count = Message.objects.filter(receiver=request.user, is_read=False).count()
+        return Response({'unread_count': count})
+
+
+# ==================== AI Chatbot View ====================
+
+class ChatbotView(APIView):
+    """AI Chatbot powered by Groq to answer questions about pets and the app."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        question = request.data.get('question', '').strip()
+        if not question:
+            return Response({'detail': 'question is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Build context: list of available pets
+        pets = Pet.objects.filter(status='approved').select_related('category')[:30]
+        pets_context = '\n'.join([
+            f"- {p.name} ({p.category.name}, {p.breed or 'unknown breed'}, "
+            f"{p.age_years}y {p.age_months}m, {p.gender}, {p.size}, "
+            f"vaccinated={'yes' if p.is_vaccinated else 'no'}, "
+            f"{'available' if p.status == 'approved' else p.status})"
+            for p in pets
+        ])
+
+        categories = PetCategory.objects.all()
+        cats_context = ', '.join([c.name for c in categories])
+
+        system_prompt = f"""You are a friendly AI assistant for a Pet Adoption & Care Management App.
+
+App features:
+- Browse and adopt pets (Dogs, Cats, Birds, Rabbits, Fish, Hamsters)
+- Post pets for adoption
+- Track pet health: vaccinations, medical records, care schedules
+- AI pet compatibility matching
+- Direct messaging with pet owners
+- Adoption request management
+- Admin dashboard for approvals
+
+Available pet categories: {cats_context}
+
+Currently available pets for adoption:
+{pets_context if pets_context else 'No pets currently listed.'}
+
+Answer the user's question helpfully and concisely. If asked about a specific pet, use the info above.
+If asked about adopting, explain the process: browse → view pet → tap 'Adopt Now' → admin approves.
+If you don't know something specific, say so honestly."""
+
+        try:
+            from groq import Groq
+            from django.conf import settings
+            client = Groq(api_key=settings.GROQ_API_KEY)
+            completion = client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": question},
+                ],
+                max_tokens=512,
+            )
+            answer = completion.choices[0].message.content
+        except Exception as e:
+            logger.error(f"Chatbot Groq error: {e}")
+            answer = ("I'm having trouble connecting to the AI right now. "
+                      "Please try again shortly, or browse the Pets section to find your perfect companion!")
+
+        return Response({'answer': answer})

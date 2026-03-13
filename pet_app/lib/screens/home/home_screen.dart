@@ -12,6 +12,7 @@ import '../../core/providers/adoption_provider.dart';
 
 import '../../models/category.dart';
 import '../../widgets/pet_card.dart';
+import '../../core/providers/chat_provider.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -49,12 +50,24 @@ class _HomeScreenState extends State<HomeScreen> {
     await petProvider.fetchCategories();
     await petProvider.fetchPets();
     await adoptionProvider.fetchRecommendations();
+    Provider.of<ChatProvider>(context, listen: false).fetchUnreadCount();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.milkyCream,
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 80),
+        child: FloatingActionButton.small(
+          heroTag: 'chatbot_fab',
+          onPressed: () => context.push('/chatbot'),
+          backgroundColor: AppColors.accentDarkBrown,
+          tooltip: 'AI Pet Assistant',
+          child: const Icon(Icons.smart_toy_outlined, color: Colors.white),
+        ),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: Stack(
         children: [
           // Main Content
@@ -106,7 +119,7 @@ class _HomeScreenState extends State<HomeScreen> {
           _buildNavItem(0, Icons.home_rounded, 'Home'),
           _buildNavItem(1, Icons.search_rounded, 'Search'),
           _buildCenterNavItem(),
-          _buildNavItem(2, Icons.favorite_rounded, 'Favorites'),
+          _buildMessagesNavItem(),
           _buildNavItem(3, Icons.person_rounded, 'Profile'),
         ],
       ),
@@ -177,6 +190,52 @@ class _HomeScreenState extends State<HomeScreen> {
           size: 32,
         ),
       ),
+    );
+  }
+
+  Widget _buildMessagesNavItem() {
+    return Consumer<ChatProvider>(
+      builder: (context, chat, _) {
+        final unread = chat.totalUnread;
+        return GestureDetector(
+          onTap: () => context.push('/messages'),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(
+                  Icons.chat_bubble_outline_rounded,
+                  color: AppColors.textGrey,
+                  size: 28,
+                ),
+                if (unread > 0)
+                  Positioned(
+                    top: -4,
+                    right: -6,
+                    child: Container(
+                      padding: const EdgeInsets.all(3),
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                      constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                      child: Text(
+                        unread > 9 ? '9+' : '$unread',
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 

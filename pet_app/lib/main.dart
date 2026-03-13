@@ -10,6 +10,7 @@ import 'core/providers/auth_provider.dart';
 import 'core/providers/pet_provider.dart';
 import 'core/providers/adoption_provider.dart';
 import 'core/providers/health_provider.dart';
+import 'core/providers/chat_provider.dart';
 import 'core/router/app_router.dart';
 
 void main() {
@@ -36,6 +37,7 @@ class _PetAdoptionAppState extends State<PetAdoptionApp> {
         ChangeNotifierProvider(create: (_) => PetProvider()),
         ChangeNotifierProvider(create: (_) => AdoptionProvider()),
         ChangeNotifierProvider(create: (_) => HealthProvider()),
+        ChangeNotifierProvider(create: (_) => ChatProvider()),
       ],
       child: MaterialApp.router(
         title: 'Pet Adoption',

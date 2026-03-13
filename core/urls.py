@@ -15,7 +15,8 @@ from .views import (
     VaccinationViewSet, MedicalRecordViewSet,
     CareScheduleViewSet, CareLogViewSet,
     NotificationViewSet, AuditLogViewSet,
-    AIRecommendationView, ReportView
+    AIRecommendationView, ReportView,
+    MessageViewSet, ChatbotView,
 )
 
 # Create router
@@ -32,6 +33,7 @@ router.register(r'care-schedules', CareScheduleViewSet, basename='care-schedule'
 router.register(r'care-logs', CareLogViewSet, basename='care-log')
 router.register(r'notifications', NotificationViewSet, basename='notification')
 router.register(r'audit-logs', AuditLogViewSet, basename='audit-log')
+router.register(r'messages', MessageViewSet, basename='message')
 
 urlpatterns = [
     # Authentication endpoints
@@ -53,6 +55,9 @@ urlpatterns = [
     path('reports/inventory/', ReportView.as_view(), name='inventory-report'),
     path('reports/vaccinations/', ReportView.as_view(), name='vaccination-report'),
     
+    # AI Chatbot endpoint
+    path('chatbot/', ChatbotView.as_view(), name='chatbot'),
+
     # Router URLs
     path('', include(router.urls)),
 ]

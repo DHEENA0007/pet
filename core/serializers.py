@@ -8,7 +8,7 @@ from django.contrib.auth.password_validation import validate_password
 from .models import (
     User, PetCategory, Owner, Pet, PetImage, AdoptionRequest,
     ReturnRequest, Vaccination, MedicalRecord, CareSchedule,
-    CareLog, Notification, AuditLog
+    CareLog, Notification, AuditLog, Message
 )
 
 
@@ -400,7 +400,50 @@ class DashboardStatsSerializer(serializers.Serializer):
 
 class AIRecommendationSerializer(serializers.Serializer):
     """Serializer for AI pet recommendations"""
-    
+
     pet = PetListSerializer()
     compatibility_score = serializers.IntegerField()
     match_reasons = serializers.ListField(child=serializers.CharField())
+
+
+class MessageSerializer(serializers.ModelSerializer):
+    """Serializer for direct messages"""
+
+    sender_id = serializers.IntegerField(source='sender.id', read_only=True)
+    sender_name = serializers.SerializerMethodField()
+    sender_username = serializers.CharField(source='sender.username', read_only=True)
+    receiver_id = serializers.IntegerField(source='receiver.id', read_only=True)
+    receiver_name = serializers.SerializerMethodField()
+    receiver_username = serializers.CharField(source='receiver.username', read_only=True)
+    pet_name = serializers.CharField(source='pet.name', read_only=True)
+
+    class Meta:
+        model = Message
+        fields = [
+            'id', 'sender_id', 'sender_name', 'sender_username',
+            'receiver_id', 'receiver_name', 'receiver_username',
+            'pet', 'pet_name', 'content', 'is_read', 'created_at',
+        ]
+        read_only_fields = ['id', 'sender_id', 'sender_name', 'sender_username',
+                            'receiver_id', 'receiver_name', 'receiver_username',
+                            'pet_name', 'is_read', 'created_at']
+
+    def get_sender_name(self, obj):
+        name = obj.sender.get_full_name()
+        return name if name.strip() else obj.sender.username
+
+    def get_receiver_name(self, obj):
+        name = obj.receiver.get_full_name()
+        return name if name.strip() else obj.receiver.username
+
+
+class ConversationSerializer(serializers.Serializer):
+    """Summary of a conversation (last message + other user info)"""
+
+    other_user_id = serializers.IntegerField()
+    other_user_name = serializers.CharField()
+    other_user_username = serializers.CharField()
+    last_message = serializers.CharField()
+    last_message_time = serializers.DateTimeField()
+    unread_count = serializers.IntegerField()
+    is_last_mine = serializers.BooleanField()

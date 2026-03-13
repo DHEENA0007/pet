@@ -1,0 +1,75 @@
+Pet Adoption App - User Accounts
+==================================================
+
+Username : alice_pet
+Password : Alice@1234
+Email    : alice@petapp.com
+Name     : Alice Walker
+Pets     : 3/3 posted
+--------------------------------------------------
+Username : bob_furry
+Password : Bob@1234
+Email    : bob@petapp.com
+Name     : Bob Smith
+Pets     : 3/3 posted
+--------------------------------------------------
+Username : carol_paws
+Password : Carol@1234
+Email    : carol@petapp.com
+Name     : Carol Jones
+Pets     : 3/3 posted
+--------------------------------------------------
+Username : david_woof
+Password : David@1234
+Email    : david@petapp.com
+Name     : David Brown
+Pets     : 3/3 posted
+--------------------------------------------------
+Username : emma_whisker
+Password : Emma@1234
+Email    : emma@petapp.com
+Name     : Emma Wilson
+Pets     : 3/3 posted
+--------------------------------------------------
+Username : frank_tail
+Password : Frank@1234
+Email    : frank@petapp.com
+Name     : Frank Davis
+Pets     : 3/3 posted
+--------------------------------------------------
+Username : grace_kitty
+Password : Grace@1234
+Email    : grace@petapp.com
+Name     : Grace Miller
+Pets     : 3/3 posted
+--------------------------------------------------
+Username : henry_bark
+Password : Henry@1234
+Email    : henry@petapp.com
+Name     : Henry Taylor
+Pets     : 3/3 posted
+--------------------------------------------------
+Username : iris_bunny
+Password : Iris@1234
+Email    : iris@petapp.com
+Name     : Iris Anderson
+Pets     : 3/3 posted
+--------------------------------------------------
+Username : jack_feather
+Password : Jack@1234
+Email    : jack@petapp.com
+Name     : Jack Thomas
+Pets     : 3/3 posted
+--------------------------------------------------
+Username : karen_fin
+Password : Karen@1234
+Email    : karen@petapp.com
+Name     : Karen Jackson
+Pets     : 3/3 posted
+--------------------------------------------------
+Username : leo_hamster
+Password : Leo@1234
+Email    : leo@petapp.com
+Name     : Leo White
+Pets     : 3/3 posted
+--------------------------------------------------

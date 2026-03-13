@@ -27,6 +27,9 @@ import '../../screens/reports/reports_screen.dart';
 import '../../screens/pets/my_adopted_pet_screen.dart';
 import '../../screens/settings/settings_screen.dart';
 import '../../screens/help/help_screen.dart';
+import '../../screens/messages/conversations_screen.dart';
+import '../../screens/messages/chat_screen.dart';
+import '../../screens/chatbot/chatbot_screen.dart';
 
 class AppRouter {
   static GoRouter createRouter(AuthProvider authProvider) => GoRouter(
@@ -179,6 +182,27 @@ class AppRouter {
         path: '/help',
         name: 'help',
         builder: (context, state) => const HelpScreen(),
+      ),
+
+      // Messaging
+      GoRoute(
+        path: '/messages',
+        name: 'conversations',
+        builder: (context, state) => const ConversationsScreen(),
+      ),
+      GoRoute(
+        path: '/chat/:userId',
+        name: 'chat',
+        builder: (context, state) {
+          final userId = int.parse(state.pathParameters['userId']!);
+          final userName = state.extra as String? ?? 'User';
+          return ChatScreen(otherUserId: userId, otherUserName: userName);
+        },
+      ),
+      GoRoute(
+        path: '/chatbot',
+        name: 'chatbot',
+        builder: (context, state) => const ChatbotScreen(),
       ),
     ],
     

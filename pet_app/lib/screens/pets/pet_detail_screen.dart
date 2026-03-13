@@ -8,6 +8,7 @@ import '../../core/providers/pet_provider.dart';
 import '../../core/providers/adoption_provider.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/utils/category_utils.dart';
+import '../../core/providers/chat_provider.dart';
 
 class PetDetailScreen extends StatefulWidget {
   final int petId;
@@ -167,13 +168,16 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
           );
         },
       ),
-      bottomNavigationBar: Consumer<PetProvider>(
-        builder: (context, provider, child) {
-          final pet = provider.selectedPet;
-          if (pet == null || !pet.isAvailable) return const SizedBox.shrink();
+      bottomNavigationBar: Consumer2<PetProvider, AuthProvider>(
+        builder: (context, petProv, authProv, child) {
+          final pet = petProv.selectedPet;
+          if (pet == null) return const SizedBox.shrink();
+
+          final currentUserId = authProv.user?.id;
+          final isOwner = pet.postedById != null && pet.postedById == currentUserId;
 
           return Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
             decoration: BoxDecoration(
               color: Colors.white,
               boxShadow: [
@@ -185,15 +189,42 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
               ],
             ),
             child: SafeArea(
-              child: ElevatedButton(
-                onPressed: () => _showAdoptDialog(pet.id),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-                child: const Text(
-                  'Adopt Now',
-                  style: TextStyle(fontSize: 18),
-                ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Message Owner button (not shown if viewing own pet)
+                  if (!isOwner && pet.postedById != null) ...[
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        context.push(
+                          '/chat/${pet.postedById}',
+                          extra: pet.postedByName ?? 'Owner',
+                        );
+                      },
+                      icon: const Icon(Icons.chat_bubble_outline, size: 18),
+                      label: Text('Message ${pet.postedByName ?? "Owner"}'),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(double.infinity, 46),
+                        side: BorderSide(color: AppColors.primaryWarmBrown),
+                        foregroundColor: AppColors.primaryWarmBrown,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                  if (pet.isAvailable && !isOwner)
+                    ElevatedButton(
+                      onPressed: () => _showAdoptDialog(pet.id),
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size(double.infinity, 50),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text('Adopt Now',
+                          style: TextStyle(fontSize: 16)),
+                    ),
+                ],
               ),
             ),
           );
