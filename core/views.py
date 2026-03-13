@@ -220,7 +220,7 @@ class PetViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action in ['list', 'retrieve']:
             return [permissions.AllowAny()]
-        if self.action in ['create']:
+        if self.action in ['create', 'my_posts', 'my_adopted']:
             return [permissions.IsAuthenticated()]
         if self.action in ['update', 'partial_update', 'destroy']:
             return [IsOwnerOrAdmin()]
