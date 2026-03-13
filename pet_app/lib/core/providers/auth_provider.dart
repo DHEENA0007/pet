@@ -8,7 +8,7 @@ import '../../models/user.dart';
 
 class AuthProvider extends ChangeNotifier {
   final ApiService _apiService = ApiService();
-  
+
   User? _user;
   bool _isLoading = false;
   String? _error;
@@ -19,11 +19,29 @@ class AuthProvider extends ChangeNotifier {
   bool get isAuthenticated => _apiService.isAuthenticated && _user != null;
   bool get isAdmin => _user?.isAdmin ?? false;
 
-  // Initialize - check for existing session
+  /// Set this in main.dart / app root to navigate to login when session expires.
+  void Function()? onSessionExpired;
+
+  // Initialize - restore existing session
   Future<void> init() async {
     await _apiService.initTokens();
+
+    // Wire up session-expiry callback from ApiService
+    _apiService.onSessionExpired = () {
+      _user = null;
+      notifyListeners();
+      onSessionExpired?.call();
+    };
+
     if (_apiService.isAuthenticated) {
-      await fetchProfile();
+      try {
+        await fetchProfile();
+      } catch (_) {
+        // Stored token is invalid — clear and treat as logged out
+        await _apiService.clearTokens();
+        _user = null;
+        notifyListeners();
+      }
     }
   }
 
@@ -39,6 +57,11 @@ class AuthProvider extends ChangeNotifier {
       if (result['success']) {
         await fetchProfile();
         _isLoading = false;
+        if (_user == null) {
+          _error = 'Failed to load profile after login';
+          notifyListeners();
+          return false;
+        }
         notifyListeners();
         return true;
       } else {
@@ -147,9 +170,9 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  // Logout
+  // Logout — blacklists refresh token on server then clears local storage
   Future<void> logout() async {
-    await _apiService.clearTokens();
+    await _apiService.serverLogout();
     _user = null;
     notifyListeners();
   }

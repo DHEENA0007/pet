@@ -8,7 +8,7 @@ from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from .views import (
-    UserRegistrationView, UserProfileView,
+    UserRegistrationView, UserProfileView, LogoutView,
     AdminDashboardView, UserDashboardView,
     PetCategoryViewSet, OwnerViewSet, PetViewSet, PetImageViewSet,
     AdoptionRequestViewSet, ReturnRequestViewSet,
@@ -38,6 +38,7 @@ urlpatterns = [
     path('auth/register/', UserRegistrationView.as_view(), name='register'),
     path('auth/login/', TokenObtainPairView.as_view(), name='login'),
     path('auth/refresh/', TokenRefreshView.as_view(), name='token-refresh'),
+    path('auth/logout/', LogoutView.as_view(), name='logout'),
     path('auth/profile/', UserProfileView.as_view(), name='profile'),
     
     # Dashboard endpoints

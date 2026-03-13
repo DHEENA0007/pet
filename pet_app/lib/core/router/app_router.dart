@@ -29,8 +29,9 @@ import '../../screens/settings/settings_screen.dart';
 import '../../screens/help/help_screen.dart';
 
 class AppRouter {
-  static final GoRouter router = GoRouter(
+  static GoRouter createRouter(AuthProvider authProvider) => GoRouter(
     initialLocation: '/',
+    refreshListenable: authProvider,
     routes: [
       // Splash Screen
       GoRoute(

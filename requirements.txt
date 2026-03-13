@@ -30,3 +30,7 @@ python-dotenv>=1.0.0
 
 # AI Features
 groq>=0.4.0
+
+# Cloudinary (Image Storage)
+cloudinary>=1.36.0
+django-cloudinary-storage>=0.3.0

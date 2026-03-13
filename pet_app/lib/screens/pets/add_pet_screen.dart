@@ -1,7 +1,10 @@
 /// Add Pet Screen
 
+import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/providers/pet_provider.dart';
@@ -23,7 +26,10 @@ class _AddPetScreenState extends State<AddPetScreen> {
   final _weightController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _personalityController = TextEditingController();
-  
+
+  XFile? _selectedImage;
+  final ImagePicker _picker = ImagePicker();
+
   int? _selectedCategory;
   String _gender = 'male';
   String _size = 'medium';
@@ -32,6 +38,13 @@ class _AddPetScreenState extends State<AddPetScreen> {
   bool _isNeutered = false;
   bool _goodWithChildren = true;
   bool _goodWithPets = true;
+
+  Future<void> _pickImage() async {
+    final picked = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+    if (picked != null) {
+      setState(() => _selectedImage = picked);
+    }
+  }
 
   @override
   void initState() {
@@ -85,7 +98,7 @@ class _AddPetScreenState extends State<AddPetScreen> {
       'activity_level': _activityLevel,
     };
 
-    final success = await provider.createPet(petData);
+    final success = await provider.createPet(petData, image: _selectedImage);
 
     if (mounted) {
       if (success) {
@@ -139,7 +152,63 @@ class _AddPetScreenState extends State<AddPetScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                
+
+                // Photo Upload
+                Text(
+                  'Pet Photo',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+                const SizedBox(height: 12),
+                GestureDetector(
+                  onTap: _pickImage,
+                  child: Container(
+                    height: 200,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: _selectedImage != null
+                            ? AppColors.primaryGreen
+                            : Colors.grey.shade300,
+                        width: 2,
+                      ),
+                    ),
+                    child: _selectedImage != null
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: kIsWeb
+                                ? Image.network(
+                                    _selectedImage!.path,
+                                    fit: BoxFit.cover,
+                                  )
+                                : Image.file(
+                                    File(_selectedImage!.path),
+                                    fit: BoxFit.cover,
+                                  ),
+                          )
+                        : Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.add_a_photo,
+                                  size: 48, color: Colors.grey.shade400),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Tap to upload photo',
+                                style: TextStyle(color: Colors.grey.shade500),
+                              ),
+                            ],
+                          ),
+                  ),
+                ),
+                if (_selectedImage != null)
+                  TextButton.icon(
+                    onPressed: () => setState(() => _selectedImage = null),
+                    icon: const Icon(Icons.close, size: 16),
+                    label: const Text('Remove photo'),
+                  ),
+                const SizedBox(height: 24),
+
                 // Basic Information Section
                 Text(
                   'Basic Information',

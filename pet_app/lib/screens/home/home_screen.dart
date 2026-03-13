@@ -23,7 +23,9 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
   String _currentFilter = 'Recent Additions';
+  int? _selectedCategoryId;
   Timer? _searchTimer;
+  final ScrollController _homeScrollController = ScrollController();
 
   @override
   void initState() {
@@ -36,6 +38,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     _searchTimer?.cancel();
+    _homeScrollController.dispose();
     super.dispose();
   }
 
@@ -183,6 +186,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return SafeArea(
       child: SingleChildScrollView(
+        controller: _homeScrollController,
         physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
         child: Column(
@@ -325,7 +329,9 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            _buildPetList2(petProvider),
+            Consumer<PetProvider>(
+              builder: (context, provider, _) => _buildPetList2(provider),
+            ),
             const SizedBox(height: 40),
           ],
         ),
@@ -455,35 +461,48 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildPetList2(PetProvider provider) {
-    if (provider.isLoading) return const Center(child: CircularProgressIndicator());
-    
-    final pets = provider.pets.where((p) => p.isAvailable).take(5).toList();
-    
-    if (pets.isEmpty) {
+    if (provider.isLoading) {
+      return const SizedBox(
+        height: 120,
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    var pets = provider.pets.where((p) => p.isAvailable);
+    // Client-side guard: ensure only the selected category is shown
+    if (_selectedCategoryId != null) {
+      pets = pets.where((p) => p.categoryId == _selectedCategoryId);
+    }
+    final petList = pets.take(5).toList();
+
+    if (petList.isEmpty) {
+      // Only show empty state if a category filter is active
+      if (_selectedCategoryId == null) return const SizedBox.shrink();
+
       return Container(
-        height: 200,
+        height: 160,
         width: double.infinity,
         decoration: BoxDecoration(
-          color: Colors.grey[50], // Very light grey background
+          color: Colors.grey[50],
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: Colors.grey[200]!),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.pets, size: 48, color: AppColors.textGrey.withOpacity(0.3)),
-            const SizedBox(height: 16),
+            Icon(Icons.pets, size: 40, color: AppColors.textGrey.withOpacity(0.3)),
+            const SizedBox(height: 12),
             Text(
-              "No pets available in this category yet",
+              'No pets found in "$_currentFilter"',
               style: GoogleFonts.poppins(
                 color: AppColors.textGrey,
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),
             ),
-             const SizedBox(height: 8),
-             Text(
-              "Check back later or explore other categories!",
+            const SizedBox(height: 6),
+            Text(
+              'Try another category',
               style: GoogleFonts.poppins(
                 color: AppColors.textGrey.withOpacity(0.7),
                 fontSize: 12,
@@ -499,9 +518,9 @@ class _HomeScreenState extends State<HomeScreen> {
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
-        itemCount: pets.length,
+        itemCount: petList.length,
         itemBuilder: (context, index) {
-          final pet = pets[index];
+          final pet = petList[index];
           return Container(
             width: 200,
             margin: const EdgeInsets.only(right: 20),
@@ -937,14 +956,32 @@ class _HomeScreenState extends State<HomeScreen> {
          bgColor = const Color(0xFFFFF3E0);
      }
      
-     return _buildCategoryCard(
-        category.name,
-        category.description ?? 'Tap to explore',
-        imagePath,
-        bgColor,
-        isAsset: isAsset,
-        icon: null,
-        onTap: () => _onCategoryTap(category.name),
+     final isSelected = _selectedCategoryId == category.id;
+     return Stack(
+       children: [
+         _buildCategoryCard(
+           category.name,
+           category.description ?? 'Tap to explore',
+           imagePath,
+           isSelected ? AppColors.primaryWarmBrown.withOpacity(0.15) : bgColor,
+           isAsset: isAsset,
+           icon: null,
+           onTap: () => _onCategoryTap(category.name),
+         ),
+         if (isSelected)
+           Positioned(
+             top: 10,
+             right: 10,
+             child: Container(
+               padding: const EdgeInsets.all(4),
+               decoration: const BoxDecoration(
+                 color: AppColors.primaryWarmBrown,
+                 shape: BoxShape.circle,
+               ),
+               child: const Icon(Icons.check, size: 12, color: Colors.white),
+             ),
+           ),
+       ],
      );
   }
 
@@ -952,24 +989,37 @@ class _HomeScreenState extends State<HomeScreen> {
   void _onCategoryTap(String categoryName) {
     final petProvider = Provider.of<PetProvider>(context, listen: false);
     try {
-        final category = petProvider.categories.firstWhere(
-            (c) => c.name.toLowerCase().contains(categoryName.toLowerCase()),
-        );
+      final category = petProvider.categories.firstWhere(
+        (c) => c.name.toLowerCase().contains(categoryName.toLowerCase()),
+      );
+
+      // Toggle: tap same category again to reset
+      if (_selectedCategoryId == category.id) {
+        setState(() {
+          _selectedCategoryId = null;
+          _currentFilter = 'Recent Additions';
+        });
+        petProvider.fetchPets();
+      } else {
+        setState(() {
+          _selectedCategoryId = category.id;
+          _currentFilter = category.name;
+        });
         petProvider.fetchPets(category: category.id);
-        setState(() => _currentFilter = category.name);
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-                content: Text('Filtering by ${category.name}'),
-                backgroundColor: AppColors.primaryWarmBrown,
-                duration: const Duration(milliseconds: 1000),
-                behavior: SnackBarBehavior.floating,
-                margin: const EdgeInsets.only(bottom: 100, left: 20, right: 20),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            )
-        );
+      }
+
+      // Scroll to pet list section
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (_homeScrollController.hasClients) {
+          _homeScrollController.animateTo(
+            _homeScrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeOut,
+          );
+        }
+      });
     } catch (e) {
-        // Fallback or ignore
+      // Fallback or ignore
     }
   }
 

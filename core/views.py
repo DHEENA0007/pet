@@ -8,6 +8,8 @@ from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.exceptions import TokenError
 from django.utils import timezone
 from django.db.models import Count, Q
 from django.db.models.functions import TruncMonth
@@ -34,6 +36,22 @@ from .utils import create_notification, create_audit_log, calculate_compatibilit
 
 
 # ==================== Authentication Views ====================
+
+class LogoutView(APIView):
+    """Blacklist the refresh token so it can no longer be used."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        refresh_token = request.data.get('refresh')
+        if not refresh_token:
+            return Response({'detail': 'Refresh token required.'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+            return Response({'detail': 'Logged out successfully.'}, status=status.HTTP_200_OK)
+        except TokenError:
+            return Response({'detail': 'Invalid or expired token.'}, status=status.HTTP_400_BAD_REQUEST)
+
 
 class UserRegistrationView(generics.CreateAPIView):
     """User registration endpoint"""
@@ -169,24 +187,22 @@ class PetViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         queryset = Pet.objects.select_related('category', 'posted_by', 'current_owner')
-        
+
         # Filter based on user role and action
         if not user.is_authenticated:
-            return queryset.filter(status='approved')
-        
-        if user.role == 'admin':
-            # Admin sees all pets
+            queryset = queryset.filter(status='approved')
+        elif user.role == 'admin':
             status_filter = self.request.query_params.get('status')
             if status_filter:
                 queryset = queryset.filter(status=status_filter)
-            return queryset
-        
-        # Users see approved pets + their own posts
-        if self.action == 'list':
-            return queryset.filter(
-                Q(status='approved') | Q(posted_by=user)
-            )
-        
+        elif self.action == 'list':
+            queryset = queryset.filter(Q(status='approved') | Q(posted_by=user))
+
+        # Apply category filter (works for all roles)
+        category_id = self.request.query_params.get('category')
+        if category_id:
+            queryset = queryset.filter(category_id=category_id)
+
         return queryset
     
     def get_serializer_class(self):

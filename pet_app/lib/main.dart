@@ -2,8 +2,8 @@
 /// Main entry point for the Flutter application
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'core/theme/app_theme.dart';
 import 'core/providers/auth_provider.dart';
@@ -17,29 +17,33 @@ void main() {
   runApp(const PetAdoptionApp());
 }
 
-class PetAdoptionApp extends StatelessWidget {
+class PetAdoptionApp extends StatefulWidget {
   const PetAdoptionApp({super.key});
+
+  @override
+  State<PetAdoptionApp> createState() => _PetAdoptionAppState();
+}
+
+class _PetAdoptionAppState extends State<PetAdoptionApp> {
+  final AuthProvider _authProvider = AuthProvider();
+  late final GoRouter _router = AppRouter.createRouter(_authProvider);
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider.value(value: _authProvider),
         ChangeNotifierProvider(create: (_) => PetProvider()),
         ChangeNotifierProvider(create: (_) => AdoptionProvider()),
         ChangeNotifierProvider(create: (_) => HealthProvider()),
       ],
-      child: Builder(
-        builder: (context) {
-          return MaterialApp.router(
-            title: 'Pet Adoption',
-            debugShowCheckedModeBanner: false,
-            theme: AppTheme.lightTheme,
-            darkTheme: AppTheme.darkTheme,
-            themeMode: ThemeMode.light,
-            routerConfig: AppRouter.router,
-          );
-        },
+      child: MaterialApp.router(
+        title: 'Pet Adoption',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: ThemeMode.light,
+        routerConfig: _router,
       ),
     );
   }

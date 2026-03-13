@@ -2,12 +2,13 @@
 
 class ApiConstants {
   // Base URL - Change this to your Django server URL
-  static const String baseUrl = 'https://pet-vew4.onrender.com/api';
-  
+  //static const String baseUrl = 'https://pet-vew4.onrender.com/api';
+  static const String baseUrl = 'http://127.0.0.1:8000/api';
   // Auth Endpoints
   static const String login = '/auth/login/';
   static const String register = '/auth/register/';
   static const String refreshToken = '/auth/refresh/';
+  static const String logout = '/auth/logout/';
   static const String profile = '/auth/profile/';
   
   // Dashboard Endpoints

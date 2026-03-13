@@ -1,6 +1,7 @@
 /// Pet Provider - Manages pet data state
 
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../services/api_service.dart';
 import '../constants/api_constants.dart';
 import '../../models/pet.dart';
@@ -29,6 +30,7 @@ class PetProvider extends ChangeNotifier {
   Future<void> fetchPets({String? status, int? category, String? search}) async {
     _isLoading = true;
     _error = null;
+    _pets = []; // clear stale data immediately
     notifyListeners();
 
     try {
@@ -216,12 +218,26 @@ class PetProvider extends ChangeNotifier {
   }
 
   // Create new pet post
-  Future<bool> createPet(Map<String, dynamic> petData) async {
+  Future<bool> createPet(Map<String, dynamic> petData, {XFile? image}) async {
     _isLoading = true;
+    _error = null;
     notifyListeners();
 
     try {
-      await _apiService.post(ApiConstants.pets, petData);
+      if (image != null) {
+        final Map<String, String> fields = {};
+        petData.forEach((key, value) {
+          if (value != null) fields[key] = value.toString();
+        });
+        await _apiService.multipart(
+          'POST',
+          ApiConstants.pets,
+          fields,
+          xFiles: {'primary_image': image},
+        );
+      } else {
+        await _apiService.post(ApiConstants.pets, petData);
+      }
       _isLoading = false;
       notifyListeners();
       return true;

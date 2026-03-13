@@ -255,23 +255,20 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _login() async {
     if (_formKey.currentState!.validate()) {
       final auth = Provider.of<AuthProvider>(context, listen: false);
-      try {
-        await auth.login(
-          _usernameController.text,
-          _passwordController.text,
+      final success = await auth.login(
+        _usernameController.text,
+        _passwordController.text,
+      );
+      if (!mounted) return;
+      if (success) {
+        context.go('/home');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(auth.error ?? 'Login failed'),
+            backgroundColor: Colors.red,
+          ),
         );
-        if (mounted) {
-          context.go('/home');
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(e.toString()),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
       }
     }
   }

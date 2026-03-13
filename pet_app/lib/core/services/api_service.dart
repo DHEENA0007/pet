@@ -1,8 +1,9 @@
 /// API Service - HTTP client for Django backend
 
+import 'dart:async';
 import 'dart:convert';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/api_constants.dart';
 
 class ApiService {
@@ -10,72 +11,125 @@ class ApiService {
   factory ApiService() => _instance;
   ApiService._internal();
 
+  static const _storage = FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+  );
+  static const _keyAccess = 'access_token';
+  static const _keyRefresh = 'refresh_token';
+
   String? _accessToken;
   String? _refreshToken;
 
-  // Get headers with auth token
-  Map<String, String> get _headers {
-    final headers = {
-      'Content-Type': 'application/json',
-    };
-    if (_accessToken != null) {
-      headers['Authorization'] = 'Bearer $_accessToken';
-    }
-    return headers;
-  }
+  // Mutex: prevent concurrent token refreshes
+  bool _isRefreshing = false;
+  final List<Completer<bool>> _refreshQueue = [];
 
-  // Initialize tokens from storage
+  // Notify AuthProvider when session expires
+  void Function()? onSessionExpired;
+
+  // ── Headers ───────────────────────────────────────────────────────────────
+
+  Map<String, String> get _headers => {
+        'Content-Type': 'application/json',
+        if (_accessToken != null) 'Authorization': 'Bearer $_accessToken',
+      };
+
+  // ── Token persistence ─────────────────────────────────────────────────────
+
   Future<void> initTokens() async {
-    final prefs = await SharedPreferences.getInstance();
-    _accessToken = prefs.getString('access_token');
-    _refreshToken = prefs.getString('refresh_token');
+    _accessToken = await _storage.read(key: _keyAccess);
+    _refreshToken = await _storage.read(key: _keyRefresh);
   }
 
-  // Save tokens to storage
   Future<void> _saveTokens(String access, String refresh) async {
     _accessToken = access;
     _refreshToken = refresh;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('access_token', access);
-    await prefs.setString('refresh_token', refresh);
+    await _storage.write(key: _keyAccess, value: access);
+    await _storage.write(key: _keyRefresh, value: refresh);
   }
 
-  // Clear tokens
   Future<void> clearTokens() async {
     _accessToken = null;
     _refreshToken = null;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('access_token');
-    await prefs.remove('refresh_token');
+    await _storage.delete(key: _keyAccess);
+    await _storage.delete(key: _keyRefresh);
   }
 
   bool get isAuthenticated => _accessToken != null;
 
-  // Login
+  // ── Token refresh (mutex-protected) ──────────────────────────────────────
+
+  Future<bool> refreshAccessToken() async {
+    // Queue concurrent callers instead of spawning multiple refresh requests
+    if (_isRefreshing) {
+      final completer = Completer<bool>();
+      _refreshQueue.add(completer);
+      return completer.future;
+    }
+
+    if (_refreshToken == null) {
+      _expireSession();
+      return false;
+    }
+
+    _isRefreshing = true;
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiConstants.baseUrl}${ApiConstants.refreshToken}'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'refresh': _refreshToken}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        // ROTATE_REFRESH_TOKENS=True => server sends a new refresh token
+        await _saveTokens(
+          data['access'],
+          data['refresh'] ?? _refreshToken!,
+        );
+        _resolveQueue(true);
+        return true;
+      } else {
+        await clearTokens();
+        _expireSession();
+        _resolveQueue(false);
+        return false;
+      }
+    } catch (_) {
+      _resolveQueue(false);
+      return false;
+    } finally {
+      _isRefreshing = false;
+    }
+  }
+
+  void _resolveQueue(bool result) {
+    for (final c in _refreshQueue) {
+      c.complete(result);
+    }
+    _refreshQueue.clear();
+  }
+
+  void _expireSession() => onSessionExpired?.call();
+
+  // ── Auth ──────────────────────────────────────────────────────────────────
+
   Future<Map<String, dynamic>> login(String username, String password) async {
     final response = await http.post(
       Uri.parse('${ApiConstants.baseUrl}${ApiConstants.login}'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'username': username,
-        'password': password,
-      }),
+      body: jsonEncode({'username': username, 'password': password}),
     );
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       await _saveTokens(data['access'], data['refresh']);
       return {'success': true};
-    } else {
-      final error = jsonDecode(response.body);
-      return {
-        'success': false,
-        'error': error['detail'] ?? 'Login failed',
-      };
     }
+    final error = jsonDecode(response.body);
+    return {'success': false, 'error': error['detail'] ?? 'Login failed'};
   }
 
-  // Register
   Future<Map<String, dynamic>> register(Map<String, dynamic> userData) async {
     final response = await http.post(
       Uri.parse('${ApiConstants.baseUrl}${ApiConstants.register}'),
@@ -83,61 +137,47 @@ class ApiService {
       body: jsonEncode(userData),
     );
 
-    if (response.statusCode == 201) {
-      return {'success': true};
-    } else {
-      final error = jsonDecode(response.body);
-      return {
-        'success': false,
-        'error': error.toString(),
-      };
-    }
+    if (response.statusCode == 201) return {'success': true};
+    final error = jsonDecode(response.body);
+    return {'success': false, 'error': error.toString()};
   }
 
-  // Refresh token
-  Future<bool> refreshAccessToken() async {
-    if (_refreshToken == null) return false;
-
-    final response = await http.post(
-      Uri.parse('${ApiConstants.baseUrl}${ApiConstants.refreshToken}'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'refresh': _refreshToken}),
-    );
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      await _saveTokens(data['access'], _refreshToken!);
-      return true;
+  /// Blacklists the refresh token on the server, then wipes local storage.
+  Future<void> serverLogout() async {
+    if (_refreshToken != null) {
+      try {
+        await http.post(
+          Uri.parse('${ApiConstants.baseUrl}${ApiConstants.logout}'),
+          headers: _headers,
+          body: jsonEncode({'refresh': _refreshToken}),
+        );
+      } catch (_) {
+        // Best-effort — always clear locally regardless
+      }
     }
-    return false;
+    await clearTokens();
   }
 
-  // Generic GET request
+  // ── HTTP helpers ──────────────────────────────────────────────────────────
+
   Future<dynamic> get(String endpoint) async {
     var response = await http.get(
       Uri.parse('${ApiConstants.baseUrl}$endpoint'),
       headers: _headers,
     );
 
-    // Try refresh token if unauthorized
     if (response.statusCode == 401) {
-      final refreshed = await refreshAccessToken();
-      if (refreshed) {
-        response = await http.get(
-          Uri.parse('${ApiConstants.baseUrl}$endpoint'),
-          headers: _headers,
-        );
-      }
+      if (!await refreshAccessToken()) throw Exception('Session expired');
+      response = await http.get(
+        Uri.parse('${ApiConstants.baseUrl}$endpoint'),
+        headers: _headers,
+      );
     }
 
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception('Failed to load data: ${response.statusCode}');
-    }
+    if (response.statusCode == 200) return jsonDecode(response.body);
+    throw Exception('GET failed: \${response.statusCode}');
   }
 
-  // Generic POST request
   Future<dynamic> post(String endpoint, Map<String, dynamic> data) async {
     var response = await http.post(
       Uri.parse('${ApiConstants.baseUrl}$endpoint'),
@@ -145,29 +185,21 @@ class ApiService {
       body: jsonEncode(data),
     );
 
-    // Try refresh token if unauthorized
     if (response.statusCode == 401) {
-      final refreshed = await refreshAccessToken();
-      if (refreshed) {
-        response = await http.post(
-          Uri.parse('${ApiConstants.baseUrl}$endpoint'),
-          headers: _headers,
-          body: jsonEncode(data),
-        );
-      }
+      if (!await refreshAccessToken()) throw Exception('Session expired');
+      response = await http.post(
+        Uri.parse('${ApiConstants.baseUrl}$endpoint'),
+        headers: _headers,
+        body: jsonEncode(data),
+      );
     }
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
-      if (response.body.isNotEmpty) {
-        return jsonDecode(response.body);
-      }
-      return {'success': true};
-    } else {
-      throw Exception('Failed to post data: ${response.body}');
+      return response.body.isNotEmpty ? jsonDecode(response.body) : {'success': true};
     }
+    throw Exception('POST failed: \${response.body}');
   }
 
-  // Generic PUT request
   Future<dynamic> put(String endpoint, Map<String, dynamic> data) async {
     var response = await http.put(
       Uri.parse('${ApiConstants.baseUrl}$endpoint'),
@@ -176,125 +208,91 @@ class ApiService {
     );
 
     if (response.statusCode == 401) {
-      final refreshed = await refreshAccessToken();
-      if (refreshed) {
-        response = await http.put(
-          Uri.parse('${ApiConstants.baseUrl}$endpoint'),
-          headers: _headers,
-          body: jsonEncode(data),
-        );
-      }
+      if (!await refreshAccessToken()) throw Exception('Session expired');
+      response = await http.put(
+        Uri.parse('${ApiConstants.baseUrl}$endpoint'),
+        headers: _headers,
+        body: jsonEncode(data),
+      );
     }
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return jsonDecode(response.body);
-    } else {
-      throw Exception('Failed to update data: ${response.body}');
     }
+    throw Exception('PUT failed: \${response.body}');
   }
 
-  // Generic DELETE request
   Future<bool> delete(String endpoint) async {
-    final response = await http.delete(
+    var response = await http.delete(
       Uri.parse('${ApiConstants.baseUrl}$endpoint'),
       headers: _headers,
     );
 
     if (response.statusCode == 401) {
-      final refreshed = await refreshAccessToken();
-      if (refreshed) {
-        final response2 = await http.delete(
-          Uri.parse('${ApiConstants.baseUrl}$endpoint'),
-          headers: _headers,
-        );
-        return response2.statusCode == 204 || response2.statusCode == 200;
-      }
+      if (!await refreshAccessToken()) throw Exception('Session expired');
+      response = await http.delete(
+        Uri.parse('${ApiConstants.baseUrl}$endpoint'),
+        headers: _headers,
+      );
     }
 
     return response.statusCode == 204 || response.statusCode == 200;
   }
 
-  // Generic Multipart Request (for file uploads)
-  Future<dynamic> multipart(String method, String endpoint, Map<String, String> fields, {Map<String, String>? files, Map<String, dynamic>? xFiles}) async {
-    var uri = Uri.parse('${ApiConstants.baseUrl}$endpoint');
-    var request = http.MultipartRequest(method, uri);
+  Future<dynamic> multipart(
+    String method,
+    String endpoint,
+    Map<String, String> fields, {
+    Map<String, String>? files,
+    Map<String, dynamic>? xFiles,
+  }) async {
+    var response = await _sendMultipart(method, endpoint, fields,
+        files: files, xFiles: xFiles);
 
-    // Add headers
-    request.headers.addAll({
-      'Authorization': 'Bearer $_accessToken',
-    });
+    if (response.statusCode == 401) {
+      if (!await refreshAccessToken()) throw Exception('Session expired');
+      response = await _sendMultipart(method, endpoint, fields,
+          files: files, xFiles: xFiles);
+    }
 
-    // Add fields
-    fields.forEach((key, value) {
-      request.fields[key] = value;
-    });
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return jsonDecode(response.body);
+    }
+    throw Exception('Multipart failed: \${response.statusCode} - \${response.body}');
+  }
 
-    // Add files
+  Future<http.Response> _sendMultipart(
+    String method,
+    String endpoint,
+    Map<String, String> fields, {
+    Map<String, String>? files,
+    Map<String, dynamic>? xFiles,
+  }) async {
+    final uri = Uri.parse('${ApiConstants.baseUrl}$endpoint');
+    final request = http.MultipartRequest(method, uri)
+      ..headers['Authorization'] = 'Bearer $_accessToken';
+
+    fields.forEach((k, v) => request.fields[k] = v);
+
     if (files != null) {
-      for (var entry in files.entries) {
-        if (entry.value.isNotEmpty) {
-          request.files.add(await http.MultipartFile.fromPath(entry.key, entry.value));
+      for (final e in files.entries) {
+        if (e.value.isNotEmpty) {
+          request.files.add(await http.MultipartFile.fromPath(e.key, e.value));
         }
       }
     }
 
     if (xFiles != null) {
-      for (var entry in xFiles.entries) {
-        final xFile = entry.value;
-        if (xFile != null) {
-          final bytes = await xFile.readAsBytes();
-          request.files.add(http.MultipartFile.fromBytes(
-            entry.key,
-            bytes,
-            filename: xFile.name,
-          ));
+      for (final e in xFiles.entries) {
+        if (e.value != null) {
+          final bytes = await e.value.readAsBytes();
+          request.files.add(
+            http.MultipartFile.fromBytes(e.key, bytes, filename: e.value.name),
+          );
         }
       }
     }
 
-    // Send request
-    var streamedResponse = await request.send();
-    var response = await http.Response.fromStream(streamedResponse);
-
-    // Handle Auth Retry
-    if (response.statusCode == 401) {
-       final refreshed = await refreshAccessToken();
-       if (refreshed) {
-          // Re-create request
-          request = http.MultipartRequest(method, uri);
-          request.headers.addAll({
-            'Authorization': 'Bearer $_accessToken',
-          });
-          fields.forEach((key, value) => request.fields[key] = value);
-          if (files != null) {
-            for (var entry in files.entries) {
-              if (entry.value.isNotEmpty) {
-                request.files.add(await http.MultipartFile.fromPath(entry.key, entry.value));
-              }
-            }
-          }
-          if (xFiles != null) {
-            for (var entry in xFiles.entries) {
-              final xFile = entry.value;
-              if (xFile != null) {
-                final bytes = await xFile.readAsBytes();
-                request.files.add(http.MultipartFile.fromBytes(
-                  entry.key,
-                  bytes,
-                  filename: xFile.name,
-                ));
-              }
-            }
-          }
-          streamedResponse = await request.send();
-          response = await http.Response.fromStream(streamedResponse);
-       }
-    }
-
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception('Failed multipart request: ${response.statusCode} - ${response.body}');
-    }
+    return http.Response.fromStream(await request.send());
   }
 }
