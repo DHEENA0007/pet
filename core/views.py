@@ -28,7 +28,7 @@ from .serializers import (
     UserRegistrationSerializer, UserSerializer, UserProfileUpdateSerializer,
     PetCategorySerializer, OwnerSerializer, PetImageSerializer,
     PetListSerializer, PetDetailSerializer, PetCreateSerializer, PetApprovalSerializer,
-    AdoptionRequestSerializer, AdoptionRequestCreateSerializer, AdoptionProcessSerializer,
+    AdoptionRequestSerializer, AdoptionRequestCreateSerializer, AdoptionReapplySerializer, AdoptionProcessSerializer,
     ReturnRequestSerializer, ReturnRequestCreateSerializer,
     VaccinationSerializer, MedicalRecordSerializer,
     CareScheduleSerializer, CareLogSerializer,
@@ -332,15 +332,55 @@ class AdoptionRequestViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == 'create':
             return AdoptionRequestCreateSerializer
+        if self.action == 'reapply':
+            return AdoptionReapplySerializer
         if self.action in ['process']:
             return AdoptionProcessSerializer
         return AdoptionRequestSerializer
-    
+
     def get_permissions(self):
         if self.action in ['process']:
             return [IsAdmin()]
         return [permissions.IsAuthenticated()]
-    
+
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
+    def reapply(self, request, pk=None):
+        """User reapplies for a previously rejected adoption request"""
+        adoption_request = self.get_object()
+
+        if adoption_request.user != request.user:
+            return Response({'error': 'You can only reapply for your own requests.'}, status=403)
+
+        if adoption_request.status != 'rejected':
+            return Response({'error': 'You can only reapply for rejected requests.'}, status=400)
+
+        if adoption_request.pet.status != 'approved':
+            return Response({'error': 'This pet is no longer available for adoption.'}, status=400)
+
+        new_message = request.data.get('request_message', adoption_request.request_message)
+        score, _ = calculate_compatibility_score(request.user, adoption_request.pet)
+
+        adoption_request.status = 'pending'
+        adoption_request.request_message = new_message
+        adoption_request.rejection_reason = None
+        adoption_request.admin_notes = None
+        adoption_request.processed_at = None
+        adoption_request.compatibility_score = score
+        adoption_request.is_reapplication = True
+        adoption_request.reapplication_count += 1
+        adoption_request.save()
+
+        create_audit_log(
+            user=request.user,
+            action='reapply_adoption',
+            model_name='AdoptionRequest',
+            object_id=adoption_request.id,
+            new_values={'status': 'pending', 'reapplication_count': adoption_request.reapplication_count},
+            request=request
+        )
+
+        return Response(AdoptionRequestSerializer(adoption_request).data)
+
     @action(detail=True, methods=['post'], permission_classes=[IsAdmin])
     def process(self, request, pk=None):
         """Admin processes an adoption request"""

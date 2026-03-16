@@ -67,6 +67,84 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
     );
   }
 
+  void _showReapplyDialog(request) {
+    final messageController = TextEditingController(text: request.requestMessage ?? '');
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(
+          left: 24,
+          right: 24,
+          top: 24,
+          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Re-apply for ${request.petName ?? 'this pet'}',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Update your message and re-submit your adoption request.',
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: messageController,
+              maxLines: 4,
+              decoration: const InputDecoration(
+                labelText: 'Message (optional)',
+                hintText: 'Tell us why you would be a great owner...',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryGreen,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                onPressed: () async {
+                  Navigator.pop(context);
+                  final provider = Provider.of<AdoptionProvider>(context, listen: false);
+                  final success = await provider.reapplyRequest(
+                    request.id,
+                    messageController.text.isEmpty ? null : messageController.text,
+                  );
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(success
+                            ? 'Reapplication submitted successfully!'
+                            : 'Failed to reapply. Please try again.'),
+                        backgroundColor:
+                            success ? AppColors.primaryGreen : AppColors.criticalRed,
+                      ),
+                    );
+                  }
+                },
+                child: const Text(
+                  'Submit Reapplication',
+                  style: TextStyle(color: Colors.white, fontSize: 16),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildRequestCard(request) {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
@@ -149,6 +227,23 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
                       ),
                     ),
                   ],
+                ),
+              ),
+            ],
+            if (request.isRejected) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => _showReapplyDialog(request),
+                  icon: const Icon(Icons.refresh, color: AppColors.primaryGreen),
+                  label: const Text(
+                    'Re-apply',
+                    style: TextStyle(color: AppColors.primaryGreen),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: AppColors.primaryGreen),
+                  ),
                 ),
               ),
             ],

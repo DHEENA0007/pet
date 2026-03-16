@@ -221,7 +221,11 @@ class AdoptionRequest(models.Model):
     
     # AI Compatibility Score
     compatibility_score = models.IntegerField(blank=True, null=True)
-    
+
+    # Reapplication tracking
+    is_reapplication = models.BooleanField(default=False)
+    reapplication_count = models.IntegerField(default=0)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     processed_at = models.DateTimeField(blank=True, null=True)

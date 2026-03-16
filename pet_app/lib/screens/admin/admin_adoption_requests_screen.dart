@@ -144,12 +144,44 @@ class _AdminAdoptionRequestsScreenState extends State<AdminAdoptionRequestsScree
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        request.petName ?? 'Unknown Pet',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
+                      Row(
+                        children: [
+                          Text(
+                            request.petName ?? 'Unknown Pet',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          if (request.isReapplication) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppColors.accentAmber.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: AppColors.accentAmber, width: 1),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.refresh, size: 11, color: AppColors.accentAmber),
+                                  const SizedBox(width: 3),
+                                  Text(
+                                    request.reapplicationCount > 1
+                                        ? 'REAPPLICATION #${request.reapplicationCount}'
+                                        : 'REAPPLICATION',
+                                    style: TextStyle(
+                                      color: AppColors.accentAmber,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 10,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                       Text(
                         'Requested by ${request.userName ?? 'Unknown'}',

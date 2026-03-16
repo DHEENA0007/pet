@@ -13,6 +13,8 @@ class AdoptionRequest {
   final String? adminNotes;
   final String? rejectionReason;
   final int? compatibilityScore;
+  final bool isReapplication;
+  final int reapplicationCount;
   final DateTime? createdAt;
   final DateTime? processedAt;
 
@@ -29,6 +31,8 @@ class AdoptionRequest {
     this.adminNotes,
     this.rejectionReason,
     this.compatibilityScore,
+    this.isReapplication = false,
+    this.reapplicationCount = 0,
     this.createdAt,
     this.processedAt,
   });
@@ -47,6 +51,8 @@ class AdoptionRequest {
       adminNotes: json['admin_notes'],
       rejectionReason: json['rejection_reason'],
       compatibilityScore: json['compatibility_score'],
+      isReapplication: json['is_reapplication'] ?? false,
+      reapplicationCount: json['reapplication_count'] ?? 0,
       createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
       processedAt: json['processed_at'] != null ? DateTime.parse(json['processed_at']) : null,
     );

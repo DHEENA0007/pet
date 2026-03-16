@@ -82,6 +82,27 @@ class AdoptionProvider extends ChangeNotifier {
     }
   }
 
+  // Reapply for a rejected adoption request (user)
+  Future<bool> reapplyRequest(int requestId, String? message) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      await _apiService.post('${ApiConstants.adoptionRequests}$requestId/reapply/', {
+        'request_message': message,
+      });
+      await fetchRequests();
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
   // Process adoption request (admin)
   Future<bool> processRequest(int requestId, String status, String? notes, String? reason) async {
     _isLoading = true;

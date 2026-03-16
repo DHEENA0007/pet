@@ -213,11 +213,13 @@ class AdoptionRequestSerializer(serializers.ModelSerializer):
             'id', 'pet', 'pet_name', 'pet_image',
             'user', 'user_name', 'user_email',
             'status', 'request_message', 'admin_notes', 'rejection_reason',
-            'compatibility_score', 'created_at', 'processed_at'
+            'compatibility_score', 'is_reapplication', 'reapplication_count',
+            'created_at', 'processed_at'
         ]
         read_only_fields = [
             'id', 'user', 'status', 'admin_notes', 'rejection_reason',
-            'compatibility_score', 'created_at', 'processed_at'
+            'compatibility_score', 'is_reapplication', 'reapplication_count',
+            'created_at', 'processed_at'
         ]
 
 
@@ -245,9 +247,14 @@ class AdoptionRequestCreateSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 
+class AdoptionReapplySerializer(serializers.Serializer):
+    """Serializer for user to reapply for a rejected adoption request"""
+    request_message = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+
+
 class AdoptionProcessSerializer(serializers.ModelSerializer):
     """Serializer for admin to process adoption requests"""
-    
+
     class Meta:
         model = AdoptionRequest
         fields = ['status', 'admin_notes', 'rejection_reason']
