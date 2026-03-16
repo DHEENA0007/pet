@@ -235,15 +235,48 @@ class AdoptionRequestCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("This pet is not available for adoption")
         return value
     
+    def validate(self, attrs):
+        request = self.context.get('request')
+        pet = attrs.get('pet')
+        user = request.user
+
+        existing = AdoptionRequest.objects.filter(pet=pet, user=user).first()
+        if existing:
+            if existing.status == 'rejected':
+                # Allow — create() will update the existing record
+                self._existing_rejected = existing
+            else:
+                raise serializers.ValidationError(
+                    "You already have an active adoption request for this pet."
+                )
+        else:
+            self._existing_rejected = None
+
+        return attrs
+
     def create(self, validated_data):
         request = self.context.get('request')
-        validated_data['user'] = request.user
-        
-        # Calculate AI compatibility score using shared logic
+        user = request.user
+
         from .utils import calculate_compatibility_score
-        score, _ = calculate_compatibility_score(request.user, validated_data['pet'])
+        score, _ = calculate_compatibility_score(user, validated_data['pet'])
+
+        existing = getattr(self, '_existing_rejected', None)
+        if existing is not None:
+            # Reuse the rejected record — treat as a reapplication
+            existing.status = 'pending'
+            existing.request_message = validated_data.get('request_message', existing.request_message)
+            existing.rejection_reason = None
+            existing.admin_notes = None
+            existing.processed_at = None
+            existing.compatibility_score = score
+            existing.is_reapplication = True
+            existing.reapplication_count += 1
+            existing.save()
+            return existing
+
+        validated_data['user'] = user
         validated_data['compatibility_score'] = score
-        
         return super().create(validated_data)
 
 

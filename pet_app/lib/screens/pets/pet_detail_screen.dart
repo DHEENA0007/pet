@@ -30,6 +30,7 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
   Future<void> _loadPetDetails() async {
     await Provider.of<PetProvider>(context, listen: false)
         .fetchPetDetails(widget.petId);
+    await Provider.of<AdoptionProvider>(context, listen: false).fetchRequests();
   }
 
   @override
@@ -222,15 +223,63 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
                     const SizedBox(height: 8),
                   ],
                   if (pet.isAvailable && !isOwner)
-                    ElevatedButton(
-                      onPressed: () => _showAdoptDialog(pet.id),
-                      style: ElevatedButton.styleFrom(
-                        minimumSize: const Size(double.infinity, 50),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                      ),
-                      child: const Text('Adopt Now',
-                          style: TextStyle(fontSize: 16)),
+                    Consumer<AdoptionProvider>(
+                      builder: (context, adoptionProvider, _) {
+                        final existingRequest = adoptionProvider.requests
+                            .where((r) => r.petId == pet.id)
+                            .firstOrNull;
+
+                        if (existingRequest == null) {
+                          // No request yet — show Adopt Now
+                          return ElevatedButton(
+                            onPressed: () => _showAdoptDialog(pet.id),
+                            style: ElevatedButton.styleFrom(
+                              minimumSize: const Size(double.infinity, 50),
+                              backgroundColor: AppColors.primaryGreen,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
+                            ),
+                            child: const Text('Adopt Now',
+                                style: TextStyle(fontSize: 16, color: Colors.white)),
+                          );
+                        }
+
+                        if (existingRequest.isPending) {
+                          // Already applied — show disabled Pending button
+                          return ElevatedButton.icon(
+                            onPressed: null,
+                            icon: const Icon(Icons.hourglass_top, size: 18),
+                            label: const Text('Request Pending',
+                                style: TextStyle(fontSize: 16)),
+                            style: ElevatedButton.styleFrom(
+                              minimumSize: const Size(double.infinity, 50),
+                              backgroundColor: AppColors.accentAmber.withOpacity(0.7),
+                              disabledBackgroundColor: AppColors.accentAmber.withOpacity(0.7),
+                              disabledForegroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
+                            ),
+                          );
+                        }
+
+                        if (existingRequest.isRejected) {
+                          // Rejected — show Re-apply button
+                          return ElevatedButton.icon(
+                            onPressed: () => _showAdoptDialog(pet.id),
+                            icon: const Icon(Icons.refresh, size: 18),
+                            label: const Text('Re-apply',
+                                style: TextStyle(fontSize: 16)),
+                            style: ElevatedButton.styleFrom(
+                              minimumSize: const Size(double.infinity, 50),
+                              backgroundColor: AppColors.secondaryBlue,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
+                            ),
+                          );
+                        }
+
+                        return const SizedBox.shrink();
+                      },
                     ),
                 ],
               ),
@@ -419,7 +468,14 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
   }
 
   void _showAdoptDialog(int petId) {
-    final messageController = TextEditingController();
+    final adoptionProvider = Provider.of<AdoptionProvider>(context, listen: false);
+    final existingRequest =
+        adoptionProvider.requests.where((r) => r.petId == petId).firstOrNull;
+    final isReapply = existingRequest != null && existingRequest.isRejected;
+
+    final messageController = TextEditingController(
+      text: isReapply ? (existingRequest.requestMessage ?? '') : '',
+    );
 
     showModalBottomSheet(
       context: context,
@@ -440,16 +496,25 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'Adoption Request',
+                isReapply ? 'Re-apply for Adoption' : 'Adoption Request',
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
+              if (isReapply) ...[
+                const SizedBox(height: 6),
+                Text(
+                  'Your previous request was rejected. Update your message and resubmit.',
+                  style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                ),
+              ],
               const SizedBox(height: 16),
               TextField(
                 controller: messageController,
                 maxLines: 4,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Message (optional)',
-                  hintText: 'Tell us why you want to adopt this pet...',
+                  hintText: isReapply
+                      ? 'Update your reason for adopting this pet...'
+                      : 'Tell us why you want to adopt this pet...',
                 ),
               ),
               const SizedBox(height: 24),
@@ -469,7 +534,9 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
                                 SnackBar(
                                   content: Text(
                                     success
-                                        ? 'Adoption request submitted!'
+                                        ? (isReapply
+                                            ? 'Reapplication submitted!'
+                                            : 'Adoption request submitted!')
                                         : provider.error ?? 'Request failed',
                                   ),
                                   backgroundColor: success
@@ -479,9 +546,14 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
                               );
                             }
                           },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isReapply
+                          ? AppColors.secondaryBlue
+                          : AppColors.primaryGreen,
+                    ),
                     child: provider.isLoading
                         ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text('Submit Request'),
+                        : Text(isReapply ? 'Submit Reapplication' : 'Submit Request'),
                   );
                 },
               ),
