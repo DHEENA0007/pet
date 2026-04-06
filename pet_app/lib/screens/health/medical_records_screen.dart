@@ -376,7 +376,7 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen> {
                         child: TextField(
                           controller: vetNameController,
                           decoration: const InputDecoration(
-                            labelText: 'Vet Name',
+                            labelText: 'petName',
                           ),
                         ),
                       ),

@@ -202,7 +202,7 @@ def get_care_tips(pet):
         tips.extend([
             f"Dogs need daily exercise - aim for at least 30 minutes",
             "Regular grooming prevents matting and keeps coat healthy",
-            "Schedule annual vet checkups",
+            "Schedule annual petcheckups",
             "Socialization is key for a well-behaved dog"
         ])
     elif category == 'cat':
@@ -243,7 +243,7 @@ def get_care_tips(pet):
     if pet.age_years < 1:
         tips.append("Young pets require extra patience and training")
     elif pet.age_years > 10:
-        tips.append("Senior pets may need more frequent vet visits")
+        tips.append("Senior pets may need more frequent petvisits")
     
     return tips
 

@@ -181,7 +181,7 @@ Automatically visible to adopters
 🏥 4.13 Medical History & Health Logs
 Illness records
 
-Vet diagnosis
+petdiagnosis
 
 Prescriptions
 

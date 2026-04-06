@@ -276,7 +276,7 @@ class Vaccination(models.Model):
     vaccine_type = models.CharField(max_length=100, blank=True, null=True)
     administered_date = models.DateField()
     next_due_date = models.DateField(blank=True, null=True)
-    administered_by = models.CharField(max_length=100, blank=True, null=True)  # Vet name
+    administered_by = models.CharField(max_length=100, blank=True, null=True)  # petname
     batch_number = models.CharField(max_length=50, blank=True, null=True)
     notes = models.TextField(blank=True, null=True)
     
